@@ -115,7 +115,7 @@ To prevent heavy downloads or batch thumbnail generation from blocking directory
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/AnasDev/AirSlice.git
+   git clone https://github.com/EngAnasMuhammad/AirSlice
    ```
 2. **Open in Android Studio** (Ladybug or newer recommended) and sync Gradle.
 3. **Run on a physical Android device** (API 26+).
