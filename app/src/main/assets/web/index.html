@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirSlice Mobile Cloud Storage</title>
+    <link rel="stylesheet" href="/style.css?v=900">
+</head>
+<body>
+    <!-- Sticky Glassmorphism Top Navbar (Linear / Vercel Dark Style) -->
+    <header class="navbar">
+        <div class="navbar-left">
+            <div class="brand">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-title">AirSlice Cloud</span>
+            </div>
+            <!-- Dynamic Connection Mode Badge -->
+            <span class="connection-badge connection-wifi" id="conn-badge">📶 Checking...</span>
+        </div>
+
+        <!-- Center Quick Search Bar -->
+        <div class="search-box-wrapper">
+            <input type="text" id="search-input" class="search-input" placeholder="🔍 Filter files in current folder..." autocomplete="off">
+        </div>
+
+        <!-- Live Storage Capacity Indicator & Toolbar Actions -->
+        <div class="navbar-right">
+            <div class="storage-container">
+                <div class="storage-info">
+                    <span id="storage-text">Loading Storage...</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="storage-bar" style="width: 0%;"></div>
+                </div>
+            </div>
+            <button id="btn-upload-file" class="btn-action-primary">📤 Upload Files</button>
+            <button id="btn-zip-current" class="btn-action-outline">📦 Download ZIP</button>
+            <input type="file" id="file-picker" multiple style="display: none;">
+        </div>
+    </header>
+
+    <main class="container" id="main-container">
+        <!-- Interactive Breadcrumbs Bar & Selection Controls -->
+        <nav class="breadcrumbs-card" id="breadcrumbs-nav">
+            <div class="breadcrumbs-list" id="breadcrumbs">
+                <span class="crumb active">Storage Home</span>
+            </div>
+            <div class="nav-toolbar-right">
+                <!-- Minimalist Sort Controls Group -->
+                <div class="sort-controls-group">
+                    <select id="sort-select" class="sort-select">
+                        <option value="name">Sort by Name</option>
+                        <option value="modified">Sort by Modified</option>
+                        <option value="accessed">Sort by Accessed</option>
+                        <option value="size">Sort by Size</option>
+                    </select>
+                    <button id="btn-sort-direction" class="btn-sort-dir" title="Toggle Sort Direction">↑</button>
+                </div>
+                <button id="btn-toggle-select-all" class="btn-action-outline btn-select-toggle">☑️ Select All</button>
+                <span class="item-badge" id="item-count">0 items</span>
+            </div>
+        </nav>
+
+        <!-- Dynamic Files & Folders Grid -->
+        <div class="grid" id="grid">
+            <div class="loading-spinner">Scanning folder content...</div>
+        </div>
+    </main>
+
+    <!-- Floating Bottom Batch Action Bar -->
+    <div class="batch-bar hidden" id="batch-bar">
+        <div class="batch-info">
+            <span class="batch-count-badge" id="batch-count">0 selected</span>
+            <span class="batch-size" id="batch-size">(0 MB)</span>
+        </div>
+        <div class="batch-actions">
+            <button id="btn-batch-download-zip" class="btn-action-primary btn-batch-zip">
+                📦 Download Selected as ZIP
+            </button>
+            <button id="btn-batch-clear" class="btn-action-outline btn-batch-clear" title="Clear Selection">
+                ✕ Clear
+            </button>
+        </div>
+    </div>
+
+    <!-- Sleek Interactive Lightbox / File Preview Modal -->
+    <div class="modal-overlay hidden" id="lightbox-modal">
+        <div class="lightbox-container" id="lightbox-container">
+
+            <!-- Lightbox Top Header Bar -->
+            <div class="lightbox-header">
+                <div class="lightbox-title-group">
+                    <span class="lightbox-file-icon" id="lb-icon">📄</span>
+                    <span class="lightbox-title" id="lb-title">File Preview</span>
+                    <span class="item-badge hidden" id="lb-img-counter">1 / 1</span>
+                </div>
+                <div class="lightbox-actions">
+                    <a id="lb-btn-newtab" href="#" target="_blank" class="btn-lb-action hidden" title="Open in New Tab">↗ Open Tab</a>
+                    <a id="lb-btn-download" href="#" target="_blank" class="btn-lb-action btn-lb-primary">📥 Download</a>
+                    <button id="lb-btn-close" class="btn-lb-close" title="Close (Esc)">✕</button>
+                </div>
+            </div>
+
+            <!-- Lightbox Dynamic Content Viewport -->
+            <div class="lightbox-content" id="lb-content">
+
+                <!-- Layout 1: Media Theater View (Videos & Images) -->
+                <div class="media-theater-layout hidden" id="lb-theater-layout">
+                    <div class="media-viewport">
+                        <!-- Next / Previous Image Navigation Overlay Buttons -->
+                        <button id="lb-btn-prev-img" class="btn-img-nav btn-img-prev hidden" title="Previous Image (Left Arrow)">◀</button>
+
+                        <video id="lb-video-player" controls autoplay playsinline class="media-element hidden" preload="metadata">
+                            Your browser does not support HTML5 video streaming.
+                        </video>
+                        <img id="lb-image-player" src="" alt="Full preview" class="media-element hidden">
+
+                        <button id="lb-btn-next-img" class="btn-img-nav btn-img-next hidden" title="Next Image (Right Arrow)">▶</button>
+                    </div>
+                </div>
+
+                <!-- Layout 2: 2-Column Split Metadata View (Documents, Audio, Archives, Code) -->
+                <div class="split-metadata-layout hidden" id="lb-split-layout">
+
+                    <!-- Left Column: File Metadata & Action Panel -->
+                    <div class="metadata-panel">
+                        <h3 class="meta-heading">File Metadata & Info</h3>
+
+                        <div class="meta-list">
+                            <div class="meta-row">
+                                <span class="meta-label">File Name:</span>
+                                <span class="meta-val meta-val-highlight" id="lb-meta-name">file.ext</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Exact Size:</span>
+                                <span class="meta-val" id="lb-meta-size">0 MB (0 bytes)</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">MIME Type:</span>
+                                <span class="meta-val" id="lb-meta-type">application/octet-stream</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Last Modified:</span>
+                                <span class="meta-val" id="lb-meta-date">YYYY-MM-DD HH:mm</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Storage Path:</span>
+                                <span class="meta-val meta-val-path" id="lb-meta-path">/storage/emulated/0/...</span>
+                            </div>
+                        </div>
+
+                        <div class="meta-actions">
+                            <a id="lb-split-download-btn" href="#" target="_blank" class="btn-split-download">
+                                📥 Download File
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Graphic / Audio Player / Thumbnail View -->
+                    <div class="preview-graphic-panel">
+                        <div class="graphic-card" id="lb-graphic-card">
+                            <span class="graphic-icon" id="lb-graphic-icon">📄</span>
+                            <img id="lb-graphic-thumb" src="" alt="Thumbnail" class="graphic-thumb hidden">
+
+                            <!-- Embedded HTML5 Audio Player -->
+                            <div class="audio-player-container hidden" id="lb-audio-container">
+                                <span class="audio-label">🎵 Audio Track Stream</span>
+                                <audio id="lb-audio-player" controls preload="metadata" class="audio-element">
+                                    Your browser does not support audio playback.
+                                </audio>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Lightbox Bottom Footer Bar -->
+            <div class="lightbox-footer">
+                <span id="lb-footer-info" class="footer-info">AirSlice Mobile Cloud Storage • Fast Direct Transfer</span>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Status / Notification Toast -->
+    <div class="info-toast hidden" id="info-toast">
+        <span class="info-icon" id="info-icon">📦</span>
+        <span class="info-text" id="info-text">Preparing download...</span>
+    </div>
+
+    <!-- Floating Live Upload Progress & Speed Widget -->
+    <div class="upload-toast hidden" id="upload-toast">
+        <div class="upload-toast-header">
+            <span class="upload-icon">📤</span>
+            <div class="upload-title-group">
+                <div class="upload-filename" id="upload-filename">Uploading file...</div>
+                <div class="upload-speed" id="upload-speed">0 MB/s • 0% • ETA: 0s</div>
+            </div>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="upload-bar" style="width: 0%;"></div>
+        </div>
+    </div>
+
+    <!-- Drag & Drop Fullscreen Overlay -->
+    <div class="drag-overlay hidden" id="drag-overlay">
+        <div class="drag-modal">
+            <span class="drag-icon">📥</span>
+            <h2>Drop files here to upload</h2>
+            <p>Files stream directly into mobile flash storage at maximum Wi-Fi speed</p>
+        </div>
+    </div>
+
+    <!-- Inline Security Pairing & Login Modal -->
+    <div class="modal-overlay hidden" id="login-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>🔐 AirSlice Security Pairing</h2>
+                <p>Request 1-Tap approval on phone OR enter the 4-digit PIN code displayed on screen.</p>
+            </div>
+            <div class="modal-body">
+                <!-- 1-Tap Quick Approval Section -->
+                <button id="btn-request-approval" class="btn-primary btn-approval">
+                    📱 Request 1-Tap Approval on Phone
+                </button>
+                <div id="approval-status-text" class="status-subtext hidden">
+                    Waiting for approval on phone... ⏳
+                </div>
+
+                <div class="divider-text">── OR ENTER PIN CODE ──</div>
+
+                <!-- PIN Code Fallback Section -->
+                <input type="text" id="pin-input" class="pin-field" maxlength="4" placeholder="••••" pattern="[0-9]*" inputmode="numeric">
+                <button id="btn-login" class="btn-secondary">Submit PIN</button>
+                <div id="login-error" class="error-text"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js?v=900"></script>
+</body>
+</html>

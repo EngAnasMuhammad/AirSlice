@@ -1,0 +1,41 @@
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Files for the ART/DALVIK VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+/build
+/*/build
+.gradle
+/local.properties
+/.artifacts/
+
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Android Test Reports
+/captures
+.externalNativeBuild
+.cxx
+
+# OS / Miscellaneous
+.DS_Store
+Thumbs.db
+*.bak
+*.swp
+
+# Signing keys & secrets
+*.jks
+*.keystore
+secrets.properties

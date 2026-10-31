@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Top Server Blade -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M3,4h18c0.55,0 1,0.45 1,1v3c0,0.55 -0.45,1 -1,1L3,9c-0.55,0 -1,-0.45 -1,-1L2,5c0,-0.55 0.45,-1 1,-1zM6,7.5a1,1 0,1 0,0 -2,1 1 0,0 0,0 2zM9,7.5a1,1 0,1 0,0 -2,1 1 0,0 0,0 2zM18,7.5h-4v-1h4v1z"/>
+    <!-- Middle Server Blade -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M3,10h18c0.55,0 1,0.45 1,1v3c0,0.55 -0.45,1 -1,1L3,15c-0.55,0 -1,-0.45 -1,-1v-3c0,-0.55 0.45,-1 1,-1zM6,13.5a1,1 0,1 0,0 -2,1 1 0,0 0,0 2zM9,13.5a1,1 0,1 0,0 -2,1 1 0,0 0,0 2zM18,13.5h-4v-1h4v1z"/>
+    <!-- Bottom Server Blade -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M3,16h18c0.55,0 1,0.45 1,1v3c0,0.55 -0.45,1 -1,1L3,21c-0.55,0 -1,-0.45 -1,-1v-3c0,-0.55 0.45,-1 1,-1zM6,19.5a1,1 0,1 0,0 -2,1 1 0,0 0,0 2zM9,19.5a1,1 0,1 0,0 -2,1 1 0,0 0,0 2zM18,19.5h-4v-1h4v1z"/>
+</vector>
