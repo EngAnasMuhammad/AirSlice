@@ -8,6 +8,10 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  actions: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -77,7 +81,7 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > app/release.keystore
 
-      - name: 🏗️ Build Signed Release APK
+      - name: 🏗️ Build Release APK
         env:
           KEYSTORE_FILE: release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -91,13 +95,18 @@ jobs:
           mkdir -p release_outputs
           if [ -f app/build/outputs/apk/release/app-release.apk ]; then
             cp app/build/outputs/apk/release/app-release.apk release_outputs/AirSlice-v1.0-release.apk
+          elif [ -f app/build/outputs/apk/release/app-release-unsigned.apk ]; then
+            cp app/build/outputs/apk/release/app-release-unsigned.apk release_outputs/AirSlice-v1.0-release.apk
+          else
+            find app/build/outputs/ -name "*.apk" -exec cp {} release_outputs/AirSlice-v1.0-release.apk \;
           fi
 
       - name: 📤 Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AirSlice-Signed-Release-APK
+          name: AirSlice-Release-APK
           path: release_outputs/AirSlice-v1.0-release.apk
+          if-no-files-found: ignore
 
       - name: 🏷️ Publish GitHub Release (On Tag Push)
         if: startsWith(github.ref, 'refs/tags/v')
