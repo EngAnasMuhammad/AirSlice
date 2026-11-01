@@ -1,3 +1,105 @@
-<resources>
-    <string name="app_name">AirSlice</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name" translatable="false">AirSlice</string>
+    <string name="notification_permission_required">Notification permission required to start server foreground service.</string>
+    <string name="storage_permission_required">All Files Access permission required to share local files.</string>
+    <string name="connect_wifi_or_hotspot_prompt">Please connect to Wi-Fi or turn on Mobile Hotspot to start server.</string>
+    <string name="copied_toast_format">Copied %1$s to clipboard!</string>
+    <string name="server_url_label">Server URL</string>
+    <string name="pairing_pin_label">Pairing PIN</string>
+    <string name="share_subject">AirSlice Mobile Storage Server</string>
+    <string name="share_text_format">Connect to local mobile server: %1$s</string>
+    <string name="share_chooser_title">Share Server Link</string>
+    <string name="connection_request_title">🔐 Connection Request</string>
+    <string name="connection_request_message">%1$s (%2$s) wants to access your files.</string>
+    <string name="approve_one_tap">Approve (1-Tap)</string>
+    <string name="deny">Deny</string>
+    <string name="network_server_status_title">Network &amp; Server Status</string>
+    <string name="active_interface_endpoint_label">Active Interface &amp; Endpoint</string>
+    <string name="offline">Offline</string>
+    <string name="expected_throughput_label">Expected Throughput Profile</string>
+    <string name="throughput_hotspot_turbo">⚡ Exceeding 22+ MB/s (Direct 1-hop zero-copy link)</string>
+    <string name="throughput_wifi_router">📶 ~2–5 MB/s (Limited by 2-hop router relay)</string>
+    <string name="throughput_offline">⚠️ Offline</string>
+    <string name="guidance_wifi_tip">💡 Tip: For 5x faster speeds (exceeding 22+ MB/s) without using mobile data, enable your phone\'s 5GHz Mobile Hotspot.</string>
+    <string name="close">Close</string>
+    <string name="open_hotspot_settings">Open Hotspot Settings</string>
+    <string name="hotspot_turbo_mode_active">⚡ Hotspot Turbo Mode Active</string>
+    <string name="wifi_router_mode">📶 Wi-Fi Router Mode</string>
+    <string name="server_disconnected">⚠️ Server Disconnected</string>
+    <string name="connected_devices_title">Connected Devices (%1$d)</string>
+    <string name="no_active_sessions">No active browser sessions yet</string>
+    <string name="client_activity_streaming">▶ Streaming: %1$s</string>
+    <string name="client_activity_downloading">⬇ Downloading: %1$s</string>
+    <string name="client_activity_uploading">⬆ Uploading: %1$s</string>
+    <string name="client_activity_viewing">👁️ Viewing: %1$s</string>
+    <string name="client_activity_browsing">📁 Browsing: %1$s</string>
+    <string name="client_activity_idle">Online • Idle</string>
+    <string name="default_video_name">Video</string>
+    <string name="default_file_name">File</string>
+    <string name="default_media_name">Media</string>
+    <string name="default_storage_name">Storage</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="start_server">Start Server</string>
+    <string name="stop_server">Stop Server</string>
+    <string name="hotspot_turbo_short">⚡ Hotspot Turbo</string>
+    <string name="wifi_router_short">📶 Wi-Fi Router</string>
+    <string name="offline_short">⚠️ Offline</string>
+    <string name="ready_to_share">Ready to Share</string>
+    <string name="server_stopped_description">Run an HTTP server on your device to easily browse your files from any other device</string>
+    <string name="copy">Copy</string>
+    <string name="share">Share</string>
+    <string name="online_ready_to_connect">Online • Ready to connect</string>
+    <string name="pin_prefix">PIN: %1$s</string>
+    <string name="storage_permission_banner_title">All Files Access Required</string>
+    <string name="storage_permission_banner_description">Grant storage permission to browse and stream local files over Wi-Fi.</string>
+    <string name="grant_access">Grant Access</string>
+
+    <!-- Morphing Power Control Strings -->
+    <string name="no_network_connection">No Network Connection</string>
+    <string name="connect_network_subtitle">Connect to Wi-Fi or turn on Mobile Hotspot to start sharing</string>
+    <string name="tap_to_launch_server">Tap the button to launch your local HTTP server</string>
+    <string name="online_status">Online</string>
+
+    <!-- Settings Sections & Controls -->
+    <string name="settings_title">Settings</string>
+    <string name="section_appearance">Appearance &amp; Language</string>
+    <string name="section_security">Security &amp; Access</string>
+    <string name="section_server_files">Server &amp; Files</string>
+    <string name="section_about">About</string>
+
+    <string name="theme_setting_title">App Theme</string>
+    <string name="theme_setting_desc">Choose light, dark, or system default theme</string>
+    <string name="language_setting_title">App Language</string>
+    <string name="language_setting_desc">Choose application display language</string>
+
+    <string name="require_pin_title">Require PIN Authentication</string>
+    <string name="require_pin_desc">Require 4-digit PIN for browser access</string>
+    <string name="show_hidden_title">Show Hidden Files</string>
+    <string name="show_hidden_desc">Display files and folders starting with \".\"</string>
+    <string name="server_port_title">Server Port</string>
+    <string name="server_port_desc_format">Port: %1$s (Takes effect on next server start)</string>
+    <string name="keep_screen_on_title">Keep Screen On While Active</string>
+    <string name="keep_screen_on_desc">Prevent screen sleep while server is running</string>
+
+    <string name="developer_title">Designed &amp; Developed by</string>
+    <string name="developer_name" translatable="false">Anas Muhammad</string>
+    <string name="github_title">GitHub Repository</string>
+    <string name="github_url_display" translatable="false">github.com/EngAnasMuhammad/AirSlice</string>
+
+    <string name="theme_dialog_title">Choose App Theme</string>
+    <string name="language_dialog_title">Choose App Language</string>
+    <string name="port_dialog_title">Set Server Port</string>
+    <string name="port_dialog_hint" tools:ignore="TypographyDashes">Enter port (1024 - 65535)</string>
+    <string name="port_invalid_error">Port must be between 1024 and 65535</string>
+
+    <string name="theme_system_default">System Default</string>
+    <string name="theme_light">Light Mode</string>
+    <string name="theme_dark">Dark Mode</string>
+    <string name="language_system_default">System Default</string>
+    <string name="language_english">English</string>
+    <string name="language_arabic">العربية (Arabic)</string>
+    <string name="cancel">Cancel</string>
+    <string name="apply">Apply</string>
+    <string name="back">back</string>
+    <string name="app_features">Fast Direct Wireless Transfer • Offline First</string>
 </resources>

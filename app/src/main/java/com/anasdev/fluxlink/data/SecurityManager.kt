@@ -1,14 +1,22 @@
 package com.anasdev.fluxlink.data
 
 import com.anasdev.fluxlink.BuildConfig
+import com.anasdev.fluxlink.domain.repository.SettingsRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import java.util.Collections
+import java.util.Locale
 import java.util.UUID
-import kotlin.random.Random
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.random.Random
 
 @Singleton
-class SecurityManager @Inject constructor() {
+class SecurityManager @Inject constructor(
+    private val settingsRepository: SettingsRepository
+) {
 
     @Volatile
     var currentPin: String = ""
@@ -18,13 +26,23 @@ class SecurityManager @Inject constructor() {
     var sessionToken: String = ""
         private set
 
+    @Volatile
+    var requirePinAuth: Boolean = true
+        private set
+
     private val activeSessions: MutableSet<String> =
         Collections.synchronizedSet(HashSet())
 
+    init {
+        settingsRepository.getRequirePinAuth().onEach { enabled ->
+            requirePinAuth = enabled
+        }.launchIn(CoroutineScope(Dispatchers.IO))
+    }
+
     @Synchronized
     fun generateNewPairingSession(): Pair<String, String> {
-        // 1. Generate 4-digit random PIN (e.g. 4829)
-        currentPin = String.format("%04d", Random.nextInt(10000))
+        // 1. Generate 4-digit random PIN strictly in ASCII digits (0-9)
+        currentPin = String.format(Locale.US, "%04d", Random.nextInt(10000))
 
         // 2. Generate secure session token
         sessionToken = UUID.randomUUID().toString().replace("-", "").take(16)
@@ -37,14 +55,17 @@ class SecurityManager @Inject constructor() {
     }
 
     fun validatePin(inputPin: String): Boolean {
+        if (!requirePinAuth) return true
         return currentPin.isNotEmpty() && currentPin == inputPin.trim()
     }
 
     fun validateToken(inputToken: String): Boolean {
+        if (!requirePinAuth) return true
         return sessionToken.isNotEmpty() && sessionToken == inputToken.trim()
     }
 
     fun isCookieAuthenticated(cookieHeader: String?): Boolean {
+        if (!requirePinAuth) return true
         if (cookieHeader.isNullOrBlank() || sessionToken.isEmpty()) return false
         val tokenFromCookie = extractSessionTokenFromCookie(cookieHeader)
         return tokenFromCookie != null && activeSessions.contains(tokenFromCookie)

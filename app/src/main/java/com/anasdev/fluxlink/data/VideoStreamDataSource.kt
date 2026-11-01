@@ -95,7 +95,7 @@ class VideoStreamDataSource @Inject constructor(
                     outputStream.flush()
                 }
             }
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             // Gracefully handle client disconnects (tab closed / user scrubbed video)
         } catch (e: Exception) {
             e.printStackTrace()

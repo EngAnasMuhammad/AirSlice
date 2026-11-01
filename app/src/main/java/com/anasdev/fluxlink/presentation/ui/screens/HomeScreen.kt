@@ -20,6 +20,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -44,20 +46,29 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,14 +77,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
@@ -90,9 +106,20 @@ import com.anasdev.fluxlink.domain.model.ServerStatus
 import com.anasdev.fluxlink.presentation.state.HomeUiState
 import com.anasdev.fluxlink.presentation.state.HomeViewModel
 
+fun String.toAsciiDigits(): String = buildString(length) {
+    for (ch in this@toAsciiDigits) {
+        when (ch) {
+            in '٠'..'٩' -> append(('0'.code + (ch.code - '٠'.code)).toChar())
+            in '۰'..'۹' -> append(('0'.code + (ch.code - '۰'.code)).toChar())
+            else -> append(ch)
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    onOpenSettings: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -100,6 +127,19 @@ fun HomeScreen(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     var showInspectorDialog by remember { mutableStateOf(false) }
+
+    val notificationReqText = stringResource(id = R.string.notification_permission_required)
+    val storageReqText = stringResource(id = R.string.storage_permission_required)
+    val connectWifiOrHotspotText = stringResource(id = R.string.connect_wifi_or_hotspot_prompt)
+    val copiedToastFormat = stringResource(id = R.string.copied_toast_format)
+    val serverUrlLabel = stringResource(id = R.string.server_url_label)
+    val pairingPinLabel = stringResource(id = R.string.pairing_pin_label)
+    val shareSubjectText = stringResource(id = R.string.share_subject)
+    val shareTextFormat = stringResource(id = R.string.share_text_format)
+    val shareChooserTitle = stringResource(id = R.string.share_chooser_title)
+
+    val isServerRunning = uiState.serverStatus == ServerStatus.RUNNING
+    val isNetworkAvailable = uiState.networkState.isConnected && uiState.networkState.selectedIpAddress != null
 
     // Auto-refresh network interfaces & connection mode state whenever returning from System Settings
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -112,37 +152,22 @@ fun HomeScreen(
         if (isGranted) {
             viewModel.startServer(context)
         } else {
-            Toast.makeText(
-                context,
-                "Notification permission required to start server foreground service.",
-                Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(context, notificationReqText, Toast.LENGTH_LONG).show()
         }
     }
 
     fun onToggleServer() {
-        if (uiState.serverStatus == ServerStatus.RUNNING) {
+        if (isServerRunning) {
             viewModel.stopServer(context)
         } else {
-            // Check storage permission first
             if (!uiState.hasStorageAccess) {
-                Toast.makeText(
-                    context,
-                    "All Files Access permission required to share local files.",
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(context, storageReqText, Toast.LENGTH_LONG).show()
                 viewModel.requestStorageAccess(context)
                 return
             }
 
-            // Error Prevention: Ensure device is connected to Wi-Fi or Hotspot before starting server
-            val isConnected = uiState.networkState.isConnected && uiState.networkState.selectedIpAddress != null
-            if (!isConnected) {
-                Toast.makeText(
-                    context,
-                    "Please connect to Wi-Fi or turn on Mobile Hotspot to start server.",
-                    Toast.LENGTH_LONG
-                ).show()
+            if (!isNetworkAvailable) {
+                Toast.makeText(context, connectWifiOrHotspotText, Toast.LENGTH_LONG).show()
                 HotspotHelper.openHotspotSettings(context)
                 return
             }
@@ -164,25 +189,24 @@ fun HomeScreen(
         }
     }
 
-    // Official non-deprecated Android Clipboard API with Android 13+ duplicate toast suppression
     @Suppress("UsePropertyAccessSyntax")
-    fun copyToClipboard(text: String, label: String = "Server URL") {
+    fun copyToClipboard(text: String, label: String = serverUrlLabel) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
         val clip = ClipData.newPlainText(label, text)
         clipboard?.setPrimaryClip(clip)
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            Toast.makeText(context, "Copied $label to clipboard!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, String.format(copiedToastFormat, label), Toast.LENGTH_SHORT).show()
         }
     }
 
     fun shareUrl(url: String) {
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "AirSlice Mobile Storage Server")
-            putExtra(Intent.EXTRA_TEXT, "Connect to local mobile server: $url")
+            putExtra(Intent.EXTRA_SUBJECT, shareSubjectText)
+            putExtra(Intent.EXTRA_TEXT, String.format(shareTextFormat, url))
         }
-        context.startActivity(Intent.createChooser(shareIntent, "Share Server Link"))
+        context.startActivity(Intent.createChooser(shareIntent, shareChooserTitle))
     }
 
     // 1-Tap Connection Request Approval Dialog
@@ -193,21 +217,25 @@ fun HomeScreen(
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_server_notification),
-                    contentDescription = "Connection Request",
+                    contentDescription = stringResource(id = R.string.connection_request_title),
                     modifier = Modifier.size(32.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
             },
             title = {
                 Text(
-                    text = "🔐 Connection Request",
+                    text = stringResource(id = R.string.connection_request_title),
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp
                 )
             },
             text = {
                 Text(
-                    text = "${pendingReq.userAgentSummary} (${pendingReq.clientIp}) wants to access your files.",
+                    text = stringResource(
+                        id = R.string.connection_request_message,
+                        pendingReq.userAgentSummary,
+                        pendingReq.clientIp
+                    ),
                     fontSize = 14.sp
                 )
             },
@@ -215,14 +243,14 @@ fun HomeScreen(
                 Button(
                     onClick = { viewModel.approveConnectionRequest(pendingReq.requestId) }
                 ) {
-                    Text("Approve (1-Tap)", fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.approve_one_tap), fontWeight = FontWeight.Bold, fontSize = 24.sp)
                 }
             },
             dismissButton = {
                 OutlinedButton(
                     onClick = { viewModel.denyConnectionRequest(pendingReq.requestId) }
                 ) {
-                    Text("Deny")
+                    Text(stringResource(id = R.string.deny), fontSize = 24.sp)
                 }
             }
         )
@@ -243,25 +271,36 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
+            CenterAlignedTopAppBar(
+                navigationIcon = {
                     Text(
-                        text = "AirSlice",
+                        text = stringResource(id = R.string.app_name),
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 16.dp)
                     )
                 },
-                actions = {
+                title = {
                     ConnectionModePill(
                         mode = uiState.networkState.connectionMode,
                         onClick = { showInspectorDialog = true }
                     )
                 },
+                actions = {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(id = R.string.settings_title),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
-                )
+                ),
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
         }
     ) { innerPadding ->
@@ -269,7 +308,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 24.dp, vertical = 12.dp)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
             // Storage Access Permission Warning Banner (if missing)
             if (!uiState.hasStorageAccess) {
@@ -279,67 +318,132 @@ fun HomeScreen(
                 )
             }
 
-            if (isLandscape) {
-                // Adaptive Landscape 2-Column Row Layout
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            AnimatedContent(
+                targetState = isServerRunning,
+                transitionSpec = {
+                    (fadeIn(tween(400)) + slideInVertically(tween(400)) { height -> height / 3 })
+                        .togetherWith(fadeOut(tween(300)) + slideOutVertically(tween(300)) { height -> -height / 3 })
+                },
+                label = "powerControlMorphingTransition",
+                modifier = Modifier.fillMaxSize()
+            ) { running ->
+                if (!running) {
+                    // STOPPED / DISCONNECTED / READY STATES (Centered Control)
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        AnimatedContent(
-                            targetState = uiState.serverStatus == ServerStatus.RUNNING,
-                            transitionSpec = {
-                                fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
-                            },
-                            label = "landscapeStateTransition"
-                        ) { isRunning ->
-                            if (isRunning) {
-                                val qrImage = uiState.qrCodeImage
-                                if (qrImage != null) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(170.dp)
-                                            .clip(RoundedCornerShape(20.dp))
-                                            .background(Color.White)
-                                            .border(3.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
-                                            .padding(8.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Image(
-                                            bitmap = qrImage,
-                                            contentDescription = "Scan QR Code",
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                }
-                            } else {
-                                ServerStoppedHeroView()
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(if (isLandscape) 8.dp else 24.dp)
+                        ) {
+                            PowerControlButton(
+                                isRunning = false,
+                                isNetworkAvailable = isNetworkAvailable,
+                                onClick = { onToggleServer() }
+                            )
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            ) {
+                                Text(
+                                    text = if (!isNetworkAvailable)
+                                        stringResource(id = R.string.no_network_connection)
+                                    else
+                                        stringResource(id = R.string.ready_to_share),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = if (isLandscape) 18.sp else 22.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = if (!isNetworkAvailable)
+                                        stringResource(id = R.string.connect_network_subtitle)
+                                    else
+                                        stringResource(id = R.string.tap_to_launch_server),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontSize = if (isLandscape) 12.sp else 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
                         }
                     }
+                } else {
+                    // SERVER RUNNING STATE C (Morphed Glassmorphic Control Bar + Telemetry + Devices)
+                    if (isLandscape) {
+                        // Landscape Mode: 2-Column Responsive Layout
+                        Row(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.spacedBy(20.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            // Left Column: Morphed Top Bar + Connected Devices List
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                MorphingGlassmorphicControlBar(
+                                    uiState = uiState,
+                                    onStopServer = { onToggleServer() },
+                                    onCopyPin = { copyToClipboard(it, pairingPinLabel) }
+                                )
 
-                    Column(
-                        modifier = Modifier
-                            .weight(1.2f)
-                            .fillMaxHeight(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        if (uiState.serverStatus == ServerStatus.RUNNING) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f)
+                                        .verticalScroll(rememberScrollState())
+                                ) {
+                                    ConnectedDevicesSection(
+                                        clients = uiState.connectedClients,
+                                        onRevokeSession = { viewModel.revokeClientSession(it) }
+                                    )
+                                }
+                            }
+
+                            // Right Column: Horizontally arranged QR + URL Connection Card
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                ServerRunningConnectionCardLandscape(
+                                    uiState = uiState,
+                                    onCopyUrl = { copyToClipboard(it, serverUrlLabel) },
+                                    onShareUrl = { shareUrl(it) }
+                                )
+                            }
+                        }
+                    } else {
+                        // Portrait Mode: Top Bar -> QR Card -> Connected Devices Section
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            MorphingGlassmorphicControlBar(
+                                uiState = uiState,
+                                onStopServer = { onToggleServer() },
+                                onCopyPin = { copyToClipboard(it, pairingPinLabel) }
+                            )
+
                             ServerRunningConnectionCard(
                                 uiState = uiState,
-                                onCopyUrl = { copyToClipboard(it, "Server URL") },
+                                onCopyUrl = { copyToClipboard(it, serverUrlLabel) },
                                 onShareUrl = { shareUrl(it) },
-                                onCopyPin = { copyToClipboard(it, "Pairing PIN") },
-                                showQrCode = false
+                                onCopyPin = { copyToClipboard(it, pairingPinLabel) },
+                                showQrCode = true
                             )
 
                             ConnectedDevicesSection(
@@ -347,63 +451,213 @@ fun HomeScreen(
                                 onRevokeSession = { viewModel.revokeClientSession(it) }
                             )
                         }
-
-                        MainServerActionButton(
-                            isRunning = uiState.serverStatus == ServerStatus.RUNNING,
-                            onClick = { onToggleServer() }
-                        )
                     }
                 }
-            } else {
-                // Standard Portrait Vertical 3-Part Layout
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.CenterHorizontally
+            }
+        }
+    }
+}
+
+/**
+ * Large Interactive Power Button for State A (No Network) and State B (Ready to Share).
+ */
+@Composable
+private fun PowerControlButton(
+    isRunning: Boolean,
+    isNetworkAvailable: Boolean,
+    onClick: () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulseTransition")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseScale"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 0.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(175.dp)
+    ) {
+        // Outer Pulsing Halo Ring for State B
+        if (isNetworkAvailable && !isRunning) {
+            Box(
+                modifier = Modifier
+                    .size(165.dp)
+                    .scale(pulseScale)
+                    .clip(CircleShape)
+                    .background(Color(0xFF10B981).copy(alpha = pulseAlpha))
+            )
+        }
+
+        // Main 148.dp Circular Power Control
+        val buttonBackground = when {
+            !isNetworkAvailable -> Brush.linearGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.surfaceContainerHighest,
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                )
+            )
+            else -> Brush.linearGradient(
+                colors = listOf(
+                    Color(0xFF10B981),
+                    Color(0xFF059669)
+                )
+            )
+        }
+
+        val iconTint = if (!isNetworkAvailable)
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        else
+            Color.White
+
+        Box(
+            modifier = Modifier
+                .size(148.dp)
+                .clip(CircleShape)
+                .background(buttonBackground)
+                .border(
+                    width = 2.dp,
+                    color = if (isNetworkAvailable) Color(0xFF34D399).copy(alpha = 0.6f) else MaterialTheme.colorScheme.outlineVariant,
+                    shape = CircleShape
+                )
+                .clickable(enabled = isNetworkAvailable) { onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isNetworkAvailable) Icons.Default.PowerSettingsNew else Icons.Default.WifiOff,
+                contentDescription = "Power Control",
+                modifier = Modifier.size(54.dp),
+                tint = iconTint
+            )
+        }
+    }
+}
+
+/**
+ * State C: Morphed Glassmorphic Top Bar with Red Stop Button & Telemetry.
+ */
+@Composable
+private fun MorphingGlassmorphicControlBar(
+    uiState: HomeUiState,
+    onStopServer: () -> Unit,
+    onCopyPin: (String) -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulseDotTransition")
+    val dotAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dotAlpha"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .clip(RoundedCornerShape(32.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(32.dp))
+            .padding(horizontal = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Start: Docked Circular Red Stop Button (48.dp)
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFEF4444))
+                    .clickable { onStopServer() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PowerSettingsNew,
+                    contentDescription = "Stop Server",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            // Center: Telemetry (Pulsing Dot + Active + Uptime)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF10B981).copy(alpha = dotAlpha))
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = stringResource(id = R.string.online_status),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF10B981)
+                )
+                Text(
+                    text = " • ",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                val uptimeAscii = ("\u202D" + uiState.formattedUptime.toAsciiDigits() + "\u202C")
+                Text(
+                    text = uptimeAscii,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        localeList = androidx.compose.ui.text.intl.LocaleList("en"),
+                        fontFeatureSettings = "tnum"
+                    ),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            // End: Interactive PIN Badge (Only shown when uiState.isPinRequired == true)
+            if (uiState.isPinRequired && uiState.pinCode.isNotEmpty()) {
+                val pinAscii = ("\u202D" + uiState.pinCode.toAsciiDigits() + "\u202C")
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .clickable { onCopyPin(uiState.pinCode) }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AnimatedContent(
-                            targetState = uiState.serverStatus == ServerStatus.RUNNING,
-                            transitionSpec = {
-                                fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
-                            },
-                            label = "portraitStateTransition"
-                        ) { isRunning ->
-                            if (isRunning) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .verticalScroll(rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    ServerRunningConnectionCard(
-                                        uiState = uiState,
-                                        onCopyUrl = { copyToClipboard(it, "Server URL") },
-                                        onShareUrl = { shareUrl(it) },
-                                        onCopyPin = { copyToClipboard(it, "Pairing PIN") },
-                                        showQrCode = true
-                                    )
-
-                                    ConnectedDevicesSection(
-                                        clients = uiState.connectedClients,
-                                        onRevokeSession = { viewModel.revokeClientSession(it) }
-                                    )
-                                }
-                            } else {
-                                ServerStoppedHeroView()
-                            }
-                        }
-                    }
-
-                    MainServerActionButton(
-                        isRunning = uiState.serverStatus == ServerStatus.RUNNING,
-                        onClick = { onToggleServer() }
+                    Text(
+                        text = "PIN# $pinAscii",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            localeList = androidx.compose.ui.text.intl.LocaleList("en"),
+                            fontFeatureSettings = "tnum"
+                        ),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        maxLines = 1
                     )
                 }
             }
@@ -451,14 +705,14 @@ private fun StoragePermissionBanner(
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     Text(
-                        text = "All Files Access Required",
+                        text = stringResource(id = R.string.storage_permission_banner_title),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "Grant storage permission to browse and stream local files over Wi-Fi.",
+                        text = stringResource(id = R.string.storage_permission_banner_description),
                         style = MaterialTheme.typography.bodySmall,
                         fontSize = 11.sp,
                         lineHeight = 15.sp,
@@ -478,7 +732,7 @@ private fun StoragePermissionBanner(
                     contentColor = MaterialTheme.colorScheme.errorContainer
                 )
             ) {
-                Text("Grant Access", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(id = R.string.grant_access), fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -495,7 +749,8 @@ private fun ServerInspectorDialog(
     val interfaceName = uiState.networkState.interfaceName ?: "N/A"
     val port = uiState.activeServerPort ?: uiState.networkState.selectedPort
     val ip = uiState.networkState.selectedIpAddress
-    val endpoint = if (ip != null) "http://$ip:$port" else "Offline"
+    val offlineText = stringResource(id = R.string.offline)
+    val endpoint = if (ip != null) "http://$ip:$port" else offlineText
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -507,7 +762,6 @@ private fun ServerInspectorDialog(
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         text = {
             if (isLandscape) {
-                // Adaptive 2-Column Row Layout for Landscape Mode
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -515,7 +769,6 @@ private fun ServerInspectorDialog(
                     horizontalArrangement = Arrangement.spacedBy(20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left Column: Icon + Title + Mode Badge + Wi-Fi Guidance Tip (Bottom Left)
                     Column(
                         modifier = Modifier
                             .weight(0.85f)
@@ -543,7 +796,7 @@ private fun ServerInspectorDialog(
                             }
 
                             Text(
-                                text = "Network & Server Status",
+                                text = stringResource(id = R.string.network_server_status_title),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 textAlign = TextAlign.Center
@@ -552,11 +805,9 @@ private fun ServerInspectorDialog(
                             InspectorModeBadge(mode = mode)
                         }
 
-                        // Guidance Tip placed on bottom left in Landscape
                         GuidanceTip(mode = mode, modifier = Modifier.padding(top = 12.dp))
                     }
 
-                    // Right Column: Scrollable Diagnostic Cards
                     Column(
                         modifier = Modifier
                             .weight(1.15f)
@@ -572,7 +823,6 @@ private fun ServerInspectorDialog(
                     }
                 }
             } else {
-                // Standard Vertical Column Layout for Portrait Mode
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -580,7 +830,6 @@ private fun ServerInspectorDialog(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Header Section
                     Box(
                         modifier = Modifier
                             .size(52.dp)
@@ -597,7 +846,7 @@ private fun ServerInspectorDialog(
                     }
 
                     Text(
-                        text = "Network & Server Status",
+                        text = stringResource(id = R.string.network_server_status_title),
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
                         textAlign = TextAlign.Center
@@ -607,7 +856,6 @@ private fun ServerInspectorDialog(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Scrollable Diagnostic Content
                     InspectorDiagnosticContent(
                         mode = mode,
                         interfaceName = interfaceName,
@@ -633,7 +881,6 @@ private fun InspectorDiagnosticContent(
     endpoint: String,
     showTip: Boolean = true
 ) {
-    // Diagnostic Card 1: Active Interface & Endpoint
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
@@ -647,7 +894,7 @@ private fun InspectorDiagnosticContent(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = "Active Interface & Endpoint",
+                text = stringResource(id = R.string.active_interface_endpoint_label),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -664,7 +911,6 @@ private fun InspectorDiagnosticContent(
         }
     }
 
-    // Diagnostic Card 2: Expected Throughput Profile
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
@@ -678,16 +924,16 @@ private fun InspectorDiagnosticContent(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = "Expected Throughput Profile",
+                text = stringResource(id = R.string.expected_throughput_label),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = when (mode) {
-                    ConnectionMode.HOTSPOT_DIRECT -> "⚡ Exceeding 22+ MB/s (Direct 1-hop zero-copy link)"
-                    ConnectionMode.WIFI_ROUTER -> "📶 ~2–5 MB/s (Limited by 2-hop router relay)"
-                    ConnectionMode.DISCONNECTED -> "⚠️ Offline"
+                    ConnectionMode.HOTSPOT_DIRECT -> stringResource(id = R.string.throughput_hotspot_turbo)
+                    ConnectionMode.WIFI_ROUTER -> stringResource(id = R.string.throughput_wifi_router)
+                    ConnectionMode.DISCONNECTED -> stringResource(id = R.string.throughput_offline)
                 },
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -698,7 +944,6 @@ private fun InspectorDiagnosticContent(
         }
     }
 
-    // Guidance Note for Wi-Fi Router Mode (when showTip is true)
     if (showTip && mode == ConnectionMode.WIFI_ROUTER) {
         GuidanceTip(mode = mode)
     }
@@ -716,7 +961,7 @@ private fun GuidanceTip(
                 .padding(top = 6.dp, bottom = 2.dp)
         ) {
             Text(
-                text = "💡 Tip: For 5x faster speeds (exceeding 22+ MB/s) without using mobile data, enable your phone's 5GHz Mobile Hotspot.",
+                text = stringResource(id = R.string.guidance_wifi_tip),
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 15.sp
@@ -742,7 +987,7 @@ private fun InspectorActionButtons(
             shape = RoundedCornerShape(12.dp),
             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
         ) {
-            Text("Close", fontSize = 13.sp)
+            Text(stringResource(id = R.string.close), fontSize = 13.sp)
         }
 
         Button(
@@ -750,7 +995,7 @@ private fun InspectorActionButtons(
             shape = RoundedCornerShape(12.dp),
             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
         ) {
-            Text("Open Hotspot Settings", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(stringResource(id = R.string.open_hotspot_settings), fontWeight = FontWeight.Bold, fontSize = 13.sp)
         }
     }
 }
@@ -759,17 +1004,17 @@ private fun InspectorActionButtons(
 private fun InspectorModeBadge(mode: ConnectionMode) {
     val (label, containerColor, textColor) = when (mode) {
         ConnectionMode.HOTSPOT_DIRECT -> Triple(
-            "⚡ Hotspot Turbo Mode Active",
+            stringResource(id = R.string.hotspot_turbo_mode_active),
             Color(0xFF003829),
             Color(0xFF69F0AE)
         )
         ConnectionMode.WIFI_ROUTER -> Triple(
-            "📶 Wi-Fi Router Mode",
+            stringResource(id = R.string.wifi_router_mode),
             MaterialTheme.colorScheme.surfaceContainer,
             MaterialTheme.colorScheme.onSurface
         )
         ConnectionMode.DISCONNECTED -> Triple(
-            "⚠️ Server Disconnected",
+            stringResource(id = R.string.server_disconnected),
             MaterialTheme.colorScheme.errorContainer,
             MaterialTheme.colorScheme.onErrorContainer
         )
@@ -800,14 +1045,14 @@ private fun ConnectedDevicesSection(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
-            text = "Connected Devices (${clients.size})",
+            text = stringResource(id = R.string.connected_devices_title, clients.size),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
 
         if (clients.isEmpty()) {
             Text(
-                text = "No active browser sessions yet",
+                text = stringResource(id = R.string.no_active_sessions),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -829,29 +1074,34 @@ private fun ConnectedDeviceRowItem(
 ) {
     val activity = client.currentActivity
 
+    val defaultVideoName = stringResource(id = R.string.default_video_name)
+    val defaultFileName = stringResource(id = R.string.default_file_name)
+    val defaultMediaName = stringResource(id = R.string.default_media_name)
+    val defaultStorageName = stringResource(id = R.string.default_storage_name)
+
     val (activityText, activityColor) = when (activity.type) {
         ClientActivityType.STREAMING_VIDEO -> Pair(
-            "▶ Streaming: ${activity.targetFileName ?: "Video"}",
+            stringResource(id = R.string.client_activity_streaming, activity.targetFileName ?: defaultVideoName),
             Color(0xFF00E676)
         )
         ClientActivityType.DOWNLOADING -> Pair(
-            "⬇ Downloading: ${activity.targetFileName ?: "File"}",
+            stringResource(id = R.string.client_activity_downloading, activity.targetFileName ?: defaultFileName),
             Color(0xFF40C4FF)
         )
         ClientActivityType.UPLOADING -> Pair(
-            "⬆ Uploading: ${activity.targetFileName ?: "File"}",
+            stringResource(id = R.string.client_activity_uploading, activity.targetFileName ?: defaultFileName),
             Color(0xFFFFD740)
         )
         ClientActivityType.VIEWING_MEDIA -> Pair(
-            "👁️ Viewing: ${activity.targetFileName ?: "Media"}",
+            stringResource(id = R.string.client_activity_viewing, activity.targetFileName ?: defaultMediaName),
             MaterialTheme.colorScheme.primary
         )
         ClientActivityType.BROWSING -> Pair(
-            "📁 Browsing: ${activity.targetFileName ?: "Storage"}",
+            stringResource(id = R.string.client_activity_browsing, activity.targetFileName ?: defaultStorageName),
             MaterialTheme.colorScheme.onSurfaceVariant
         )
         ClientActivityType.IDLE -> Pair(
-            "Online • Idle",
+            stringResource(id = R.string.client_activity_idle),
             Color(0xFF4CAF50)
         )
     }
@@ -963,50 +1213,8 @@ private fun ConnectedDeviceRowItem(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("Disconnect", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(id = R.string.disconnect), fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
-        }
-    }
-}
-
-@Composable
-private fun MainServerActionButton(
-    isRunning: Boolean,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isRunning)
-                MaterialTheme.colorScheme.errorContainer
-            else
-                MaterialTheme.colorScheme.primary,
-            contentColor = if (isRunning)
-                MaterialTheme.colorScheme.onErrorContainer
-            else
-                MaterialTheme.colorScheme.onPrimary
-        )
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_server_notification),
-                contentDescription = "Server Icon",
-                modifier = Modifier.size(22.dp)
-            )
-            Text(
-                text = if (isRunning) "Stop Server" else "Start Server",
-                fontWeight = FontWeight.Bold,
-                fontSize = 17.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }
@@ -1018,17 +1226,17 @@ private fun ConnectionModePill(
 ) {
     val (label, containerColor, textColor) = when (mode) {
         ConnectionMode.HOTSPOT_DIRECT -> Triple(
-            "⚡ Hotspot Turbo",
+            stringResource(id = R.string.hotspot_turbo_short),
             Color(0xFF003829),
             Color(0xFF69F0AE)
         )
         ConnectionMode.WIFI_ROUTER -> Triple(
-            "📶 Wi-Fi Router",
+            stringResource(id = R.string.wifi_router_short),
             MaterialTheme.colorScheme.surfaceContainerHigh,
             MaterialTheme.colorScheme.onSurface
         )
         ConnectionMode.DISCONNECTED -> Triple(
-            "⚠️ Offline",
+            stringResource(id = R.string.offline_short),
             MaterialTheme.colorScheme.errorContainer,
             MaterialTheme.colorScheme.onErrorContainer
         )
@@ -1036,64 +1244,28 @@ private fun ConnectionModePill(
 
     Box(
         modifier = Modifier
-            .padding(end = 16.dp)
             .clip(RoundedCornerShape(50))
             .background(containerColor)
             .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = textColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@Composable
-private fun ServerStoppedHeroView() {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.padding(horizontal = 16.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(110.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_server_notification),
-                contentDescription = "Server Ready",
-                modifier = Modifier.size(52.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = "Ready to Share",
-                style = MaterialTheme.typography.titleLarge,
+                text = label,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                fontSize = 22.sp,
+                color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = "Start local HTTP server to transfer files at maximum speed",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Expand Inspector",
+                tint = textColor,
+                modifier = Modifier.size(18.dp)
             )
         }
     }
@@ -1112,18 +1284,6 @@ private fun ServerRunningConnectionCard(
     val serverUrl = if (ip != null) "http://$ip:$activePort" else null
     val qrImage = uiState.qrCodeImage
 
-    // Pulsing Status Dot Animation
-    val infiniteTransition = rememberInfiniteTransition(label = "pulseTransition")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -1138,8 +1298,6 @@ private fun ServerRunningConnectionCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
-            // 1. High-Contrast QR Code Container
             if (showQrCode && qrImage != null) {
                 Box(
                     modifier = Modifier
@@ -1158,7 +1316,6 @@ private fun ServerRunningConnectionCard(
                 }
             }
 
-            // 2. Monospace URL Pill Box with Copy & Share Action Buttons Placed UNDER the Address
             if (serverUrl != null) {
                 Box(
                     modifier = Modifier
@@ -1172,16 +1329,20 @@ private fun ServerRunningConnectionCard(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            text = serverUrl,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.primary,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                            Text(
+                                text = serverUrl,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.basicMarquee()
+                            )
+                        }
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -1197,11 +1358,11 @@ private fun ServerRunningConnectionCard(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.ic_copy),
+                                        imageVector = Icons.Default.ContentCopy,
                                         contentDescription = "Copy URL",
                                         modifier = Modifier.size(16.dp)
                                     )
-                                    Text("Copy", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(id = R.string.copy), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
 
@@ -1215,60 +1376,122 @@ private fun ServerRunningConnectionCard(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.ic_share),
+                                        imageVector = Icons.Default.Share,
                                         contentDescription = "Share URL",
                                         modifier = Modifier.size(16.dp)
                                     )
-                                    Text("Share", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(id = R.string.share), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
 
-            // 3. Pulsing Online Indicator & PIN Badge Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+@Composable
+private fun ServerRunningConnectionCardLandscape(
+    uiState: HomeUiState,
+    onCopyUrl: (String) -> Unit,
+    onShareUrl: (String) -> Unit
+) {
+    val activePort = uiState.activeServerPort ?: uiState.networkState.selectedPort
+    val ip = uiState.networkState.selectedIpAddress
+    val serverUrl = if (ip != null) "http://$ip:$activePort" else null
+    val qrImage = uiState.qrCodeImage
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            if (qrImage != null) {
+                Box(
+                    modifier = Modifier
+                        .size(140.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.White)
+                        .border(2.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                        .padding(6.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF4CAF50).copy(alpha = pulseAlpha))
-                    )
-                    Text(
-                        text = "Online • Ready to connect",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF4CAF50),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                    Image(
+                        bitmap = qrImage,
+                        contentDescription = "Scan QR Code",
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
+            }
 
-                if (uiState.pinCode.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .clickable { onCopyPin(uiState.pinCode) }
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
+            if (serverUrl != null) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                         Text(
-                            text = "PIN: ${uiState.pinCode}",
-                            fontSize = 12.sp,
+                            text = serverUrl,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            maxLines = 1
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.basicMarquee()
                         )
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedButton(
+                            onClick = { onCopyUrl(serverUrl) },
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Copy",
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(stringResource(id = R.string.copy), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { onShareUrl(serverUrl) },
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "Share",
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(stringResource(id = R.string.share), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }

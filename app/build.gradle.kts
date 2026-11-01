@@ -13,8 +13,8 @@ android {
         applicationId = "com.anasdev.fluxlink"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -41,15 +41,20 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            resValue("string", "app_name", "AirSlice")
+        }
         release {
             isMinifyEnabled = false
             isShrinkResources = false
             val keystorePath = System.getenv("KEYSTORE_FILE") ?: "release.keystore"
             val keystoreFile = file(keystorePath)
-            if (keystoreFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (keystoreFile.exists()) {
+                signingConfigs.getByName("release")
             } else {
-                signingConfig = signingConfigs.getByName("debug")
+                signingConfigs.getByName("debug")
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -66,6 +71,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
 }
 
@@ -76,9 +82,13 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material.icons.core)
+    implementation(libs.androidx.compose.material.icons.extended)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.navigation.compose)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
@@ -87,7 +97,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 
     debugImplementation(libs.androidx.compose.ui.tooling)

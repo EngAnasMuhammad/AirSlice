@@ -22,6 +22,7 @@ import java.net.NetworkInterface
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 
 @Singleton
 class NetworkInfoProvider @Inject constructor(
@@ -74,7 +75,7 @@ class NetworkInfoProvider @Inject constructor(
             "http://$ipAddress:$port"
         } else null
 
-        val isConnected = primaryType != NetworkType.DISCONNECTED && ipAddress != null
+        val isConnected = primaryType != NetworkType.DISCONNECTED
 
         return NetworkState(
             isConnected = isConnected,
@@ -115,7 +116,7 @@ class NetworkInfoProvider @Inject constructor(
         // Event-driven callback with 15s fallback check (skips polling whenever active transfers are running to prevent netlink lock contention)
         val tickerJob = CoroutineScope(Dispatchers.IO).launch {
             while (true) {
-                delay(15_000L) // 15-second fallback interval
+                delay(15_000L.milliseconds) // 15-second fallback interval
 
                 val hasActiveTransfer = connectedSessionManager.connectedClients.value.any { client ->
                     val t = client.currentActivity.type

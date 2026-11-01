@@ -212,12 +212,13 @@ class LocalServerEngine @Inject constructor(
                     return
                 }
 
-                // Public Server Info Endpoint (Active Connection Mode & Device Model)
+                // Public Server Info Endpoint (Active Connection Mode, Device Model & PIN Auth Requirement)
                 "/api/server-info" -> {
                     val netState = networkInfoProvider.getNetworkState()
                     val modeName = netState.connectionMode.name
                     val modelName = android.os.Build.MODEL
-                    val json = "{\"connectionMode\":\"$modeName\",\"deviceName\":\"$modelName\"}"
+                    val reqPin = securityManager.requirePinAuth
+                    val json = "{\"connectionMode\":\"$modeName\",\"deviceName\":\"$modelName\",\"requirePin\":$reqPin,\"authenticated\":true}"
                     sendJsonResponse(outputStream, json, acceptEncoding = acceptEncoding)
                     return
                 }
@@ -232,16 +233,21 @@ class LocalServerEngine @Inject constructor(
 
                 // 1-Tap Connection Poll Status Check
                 "/auth/check-approval" -> {
-                    val requestId = queryParams["requestId"]
-                    if (requestId.isNullOrBlank()) {
-                        sendJsonResponse(outputStream, "{\"status\":\"DENIED\"}", acceptEncoding = acceptEncoding)
+                    if (!securityManager.requirePinAuth) {
+                        connectedSessionManager.registerSession(securityManager.sessionToken, clientIp, userAgent)
+                        sendJsonResponseWithCookie(outputStream, "{\"status\":\"APPROVED\",\"requirePin\":false}", securityManager.sessionToken, acceptEncoding)
                     } else {
-                        val status = connectionApprovalManager.checkApprovalStatus(requestId)
-                        if (status == ApprovalStatus.APPROVED) {
-                            connectedSessionManager.registerSession(securityManager.sessionToken, clientIp, userAgent)
-                            sendJsonResponseWithCookie(outputStream, "{\"status\":\"APPROVED\"}", securityManager.sessionToken, acceptEncoding)
+                        val requestId = queryParams["requestId"]
+                        if (requestId.isNullOrBlank()) {
+                            sendJsonResponse(outputStream, "{\"status\":\"DENIED\"}", acceptEncoding = acceptEncoding)
                         } else {
-                            sendJsonResponse(outputStream, "{\"status\":\"${status.name}\"}", acceptEncoding = acceptEncoding)
+                            val status = connectionApprovalManager.checkApprovalStatus(requestId)
+                            if (status == ApprovalStatus.APPROVED) {
+                                connectedSessionManager.registerSession(securityManager.sessionToken, clientIp, userAgent)
+                                sendJsonResponseWithCookie(outputStream, "{\"status\":\"APPROVED\"}", securityManager.sessionToken, acceptEncoding)
+                            } else {
+                                sendJsonResponse(outputStream, "{\"status\":\"${status.name}\"}", acceptEncoding = acceptEncoding)
+                            }
                         }
                     }
                     return
@@ -254,7 +260,7 @@ class LocalServerEngine @Inject constructor(
                         val bodyParams = parseQueryParams(bodyText)
                         val inputPin = bodyParams["pin"] ?: extractJsonField(bodyText, "pin")
 
-                        if (inputPin != null && securityManager.validatePin(inputPin)) {
+                        if (!securityManager.requirePinAuth || (inputPin != null && securityManager.validatePin(inputPin))) {
                             connectedSessionManager.registerSession(securityManager.sessionToken, clientIp, userAgent)
                             val jsonSuccess = "{\"success\":true,\"message\":\"Pairing successful\"}"
                             sendJsonResponseWithCookie(outputStream, jsonSuccess, securityManager.sessionToken, acceptEncoding)
@@ -273,14 +279,21 @@ class LocalServerEngine @Inject constructor(
                 }
             }
 
-            // 3. Security Interceptor: Check Cookie Authentication & Active Session Registration
+            // 3. Security Interceptor: Check Dynamic PIN Auth Requirement & Session Registration
             val extractedToken = securityManager.extractSessionTokenFromCookie(cookieHeader ?: "")
-            val isAuthenticated = extractedToken != null &&
-                    securityManager.isCookieAuthenticated(cookieHeader) &&
-                    connectedSessionManager.isSessionValid(extractedToken, clientIp)
+            val isPinRequired = securityManager.requirePinAuth
+
+            val isAuthenticated = if (!isPinRequired) {
+                true
+            } else {
+                extractedToken != null &&
+                        securityManager.isCookieAuthenticated(cookieHeader) &&
+                        connectedSessionManager.isSessionValid(extractedToken, clientIp)
+            }
 
             if (isAuthenticated) {
-                connectedSessionManager.registerSession(extractedToken, clientIp, userAgent)
+                val activeToken = if (!extractedToken.isNullOrBlank()) extractedToken else securityManager.sessionToken
+                connectedSessionManager.registerSession(activeToken, clientIp, userAgent)
             }
 
             if (rawPath == "/" || rawPath == "/index.html") {
@@ -391,7 +404,7 @@ class LocalServerEngine @Inject constructor(
                                 scope.launch(serverDispatchers.thumbnailDispatcher) {
                                     try {
                                         thumbnailGenerator.getOrCreateThumbnail(viewFile)
-                                    } catch (e: Exception) {
+                                    } catch (_: Exception) {
                                         // Non-blocking background pre-cache
                                     }
                                 }
@@ -495,7 +508,7 @@ class LocalServerEngine @Inject constructor(
                 Content-Range: bytes ${rangeSpec.startByte}-${rangeSpec.endByte}/${rangeSpec.fileLength}
                 Content-Length: ${rangeSpec.contentLength}
                 Content-Type: $mimeType
-                Cache-Control: no-cache
+                Cache-Control: no-cache, no-store, must-revalidate, max-age=0
                 Connection: close
 
             """.trimIndent() + "\r\n"
@@ -503,7 +516,7 @@ class LocalServerEngine @Inject constructor(
             outputStream.write(headers.toByteArray(Charsets.UTF_8))
 
             videoStreamDataSource.streamByteRange(file, rangeSpec, outputStream)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Graceful handling of client-abort during video seeking
         }
     }
@@ -513,7 +526,7 @@ class LocalServerEngine @Inject constructor(
         file: File,
         mimeType: String,
         isInline: Boolean,
-        cacheControl: String = "no-cache, no-store, must-revalidate"
+        cacheControl: String = "no-cache, no-store, must-revalidate, max-age=0"
     ) = withContext(serverDispatchers.heavyTransferDispatcher) {
         try {
             val fileName = file.name
@@ -545,7 +558,7 @@ class LocalServerEngine @Inject constructor(
                     outputStream.flush()
                 }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Graceful handling of client disconnects
         }
     }
@@ -557,13 +570,16 @@ class LocalServerEngine @Inject constructor(
             sb.append("HTTP/1.1 200 OK\r\n")
             sb.append("Content-Type: application/zip\r\n")
             sb.append("Content-Disposition: attachment; filename=\"").append(zipName).append("\"; filename*=UTF-8''").append(encodedZipName).append("\r\n")
-            sb.append("Cache-Control: no-cache\r\n")
+            sb.append("Cache-Control: no-cache, no-store, must-revalidate, max-age=0\r\n")
             sb.append("Connection: close\r\n\r\n")
 
             outputStream.write(sb.toString().toByteArray(Charsets.UTF_8))
 
-            // Stream directory or batch files directly into network socket using ZipOutputStream with Smart Dynamic Deflater
-            fileManager.streamPathsAsZip(targets, outputStream)
+            if (targets.size == 1 && targets[0].isDirectory) {
+                fileManager.streamDirectoryAsZip(targets[0].absolutePath, outputStream)
+            } else {
+                fileManager.streamPathsAsZip(targets, outputStream)
+            }
             outputStream.flush()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -667,7 +683,7 @@ class LocalServerEngine @Inject constructor(
     private fun readAssetFile(assetPath: String): ByteArray? {
         return try {
             context.assets.open(assetPath).use { it.readBytes() }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -677,7 +693,7 @@ class LocalServerEngine @Inject constructor(
         bytes: ByteArray,
         mimeType: String,
         acceptEncoding: String?,
-        cacheControl: String = "no-cache, no-store, must-revalidate"
+        cacheControl: String = "no-cache, no-store, must-revalidate, max-age=0"
     ) {
         val isTextOrJson = mimeType.startsWith("text/") ||
                 mimeType.contains("json") ||
@@ -699,7 +715,7 @@ class LocalServerEngine @Inject constructor(
         statusCode: Int = 200,
         statusText: String = "OK",
         cookieToken: String? = null,
-        cacheControl: String = "no-cache, no-store, must-revalidate"
+        cacheControl: String = "no-cache, no-store, must-revalidate, max-age=0"
     ) {
         try {
             val baos = ByteArrayOutputStream()
@@ -735,7 +751,7 @@ class LocalServerEngine @Inject constructor(
         outputStream: OutputStream,
         bytes: ByteArray,
         mimeType: String,
-        cacheControl: String = "no-cache, no-store, must-revalidate"
+        cacheControl: String = "no-cache, no-store, must-revalidate, max-age=0"
     ) {
         val sb = StringBuilder()
         sb.append("HTTP/1.1 200 OK\r\n")
@@ -779,6 +795,9 @@ class LocalServerEngine @Inject constructor(
             sb.append("Set-Cookie: ").append(SecurityManager.COOKIE_NAME).append("=").append(sessionToken).append("; Path=/; SameSite=Lax\r\n")
             sb.append("Content-Length: ").append(bytes.size).append("\r\n")
             sb.append("Access-Control-Allow-Origin: *\r\n")
+            sb.append("Cache-Control: no-cache, no-store, must-revalidate, max-age=0\r\n")
+            sb.append("Pragma: no-cache\r\n")
+            sb.append("Expires: 0\r\n")
             sb.append("Connection: close\r\n\r\n")
 
             outputStream.write(sb.toString().toByteArray(Charsets.UTF_8))
@@ -803,6 +822,9 @@ class LocalServerEngine @Inject constructor(
             sb.append("Content-Type: application/json; charset=UTF-8\r\n")
             sb.append("Content-Length: ").append(bytes.size).append("\r\n")
             sb.append("Access-Control-Allow-Origin: *\r\n")
+            sb.append("Cache-Control: no-cache, no-store, must-revalidate, max-age=0\r\n")
+            sb.append("Pragma: no-cache\r\n")
+            sb.append("Expires: 0\r\n")
             sb.append("Connection: close\r\n\r\n")
 
             outputStream.write(sb.toString().toByteArray(Charsets.UTF_8))
@@ -818,6 +840,9 @@ class LocalServerEngine @Inject constructor(
         sb.append("HTTP/1.1 404 Not Found\r\n")
         sb.append("Content-Type: text/html; charset=UTF-8\r\n")
         sb.append("Content-Length: ").append(bytes.size).append("\r\n")
+        sb.append("Cache-Control: no-cache, no-store, must-revalidate, max-age=0\r\n")
+        sb.append("Pragma: no-cache\r\n")
+        sb.append("Expires: 0\r\n")
         sb.append("Connection: close\r\n\r\n")
 
         outputStream.write(sb.toString().toByteArray(Charsets.UTF_8))
@@ -858,7 +883,7 @@ class LocalServerEngine @Inject constructor(
         return try {
             val percentEncoded = component.replace("+", "%2B")
             URLDecoder.decode(percentEncoded, "UTF-8")
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             component
         }
     }

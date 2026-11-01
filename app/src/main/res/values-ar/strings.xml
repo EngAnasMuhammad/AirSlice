@@ -1,0 +1,103 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">إيرسلايس</string>
+    <string name="notification_permission_required">يلزم الحصول على إذن الإشعارات لتشغيل خدمة الخادم في الخلفية.</string>
+    <string name="storage_permission_required">يلزم الحصول على إذن الوصول إلى جميع الملفات لمشاركة الملفات المحلية.</string>
+    <string name="connect_wifi_or_hotspot_prompt">يرجى الاتصال بشبكة Wi-Fi أو تشغيل نقطة الاتصال الفعالة لبدء تشغيل الخادم.</string>
+    <string name="copied_toast_format">تم نسخ %1$s إلى الحافظة!</string>
+    <string name="server_url_label">رابط الخادم</string>
+    <string name="pairing_pin_label">رمز اقتران PIN</string>
+    <string name="share_subject">خادم التخزين المحمول AirSlice</string>
+    <string name="share_text_format">الاتصال بخادم المحمول المحلي: %1$s</string>
+    <string name="share_chooser_title">مشاركة رابط الخادم</string>
+    <string name="connection_request_title">🔐 طلب اتصال</string>
+    <string name="connection_request_message">يرغب %1$s (%2$s) في الوصول إلى ملفاتك.</string>
+    <string name="approve_one_tap">موافقة (بضغطة واحدة)</string>
+    <string name="deny">رفض</string>
+    <string name="network_server_status_title">حالة الشبكة والخادم</string>
+    <string name="active_interface_endpoint_label">الواجهة الفعالة ونقطة الاتصال</string>
+    <string name="offline">غير متصل</string>
+    <string name="expected_throughput_label">معدل نقل البيانات المتوقع</string>
+    <string name="throughput_hotspot_turbo">⚡ يتجاوز 22+ ميجابايت/ثانية (ربط مباشر بدون نسخ)</string>
+    <string name="throughput_wifi_router">📶 ~2–5 ميجابايت/ثانية (محدود بتمرير الراوتر)</string>
+    <string name="throughput_offline">⚠️ غير متصل</string>
+    <string name="guidance_wifi_tip">💡 تلميح: للحصول على سرعة أسرع بـ 5 أضعاف (تتجاوز 22+ ميجابايت/ثانية) دون استهلاك البيانات، قم بتفعيل نقطة الاتصال 5 جيجاهرتز برقم هاتفك.</string>
+    <string name="close">إغلاق</string>
+    <string name="open_hotspot_settings">فتح إعدادات نقطة الاتصال</string>
+    <string name="hotspot_turbo_mode_active">⚡ وضع نقطة الاتصال السريع نشط</string>
+    <string name="wifi_router_mode">وضع راوتر (Wi-Fi) 📶</string>
+    <string name="server_disconnected">⚠️ الخادم غير متصل</string>
+    <string name="connected_devices_title">الأجهزة المتصلة (%1$d)</string>
+    <string name="no_active_sessions">لا توجد جلسات متصفح نشطة حالياً</string>
+    <string name="client_activity_streaming">▶ بث: %1$s</string>
+    <string name="client_activity_downloading">⬇ تنزيل: %1$s</string>
+    <string name="client_activity_uploading">⬆ رفع: %1$s</string>
+    <string name="client_activity_viewing">👁️ عرض: %1$s</string>
+    <string name="client_activity_browsing">📁 تصفح: %1$s</string>
+    <string name="client_activity_idle">متصل • خامل</string>
+    <string name="default_video_name">فيديو</string>
+    <string name="default_file_name">ملف</string>
+    <string name="default_media_name">وسائط</string>
+    <string name="default_storage_name">التخزين</string>
+    <string name="disconnect">قطع الاتصال</string>
+    <string name="start_server">تشغيل الخادم</string>
+    <string name="stop_server">إيقاف الخادم</string>
+    <string name="hotspot_turbo_short">⚡ الHotspot السريع</string>
+    <string name="wifi_router_short"> راوتر (Wi-Fi) 📶</string>
+    <string name="offline_short">⚠️ غير متصل</string>
+    <string name="ready_to_share">جاهز للمشاركة</string>
+    <string name="server_stopped_description">شغّل خادم HTTP على جهازك لنقل و تصفح الملفات بسهولة و سرعة عالية من اي جهاز</string>
+    <string name="copy">نسخ</string>
+    <string name="share">مشاركة</string>
+    <string name="online_ready_to_connect">متصل • جاهز للاتصال</string>
+    <string name="pin_prefix">رمز PIN: %1$s</string>
+    <string name="storage_permission_banner_title">يلزم إذن الوصول إلى جميع الملفات</string>
+    <string name="storage_permission_banner_description">منح إذن التخزين لتصفح وبث الملفات المحلية عبر Wi-Fi.</string>
+    <string name="grant_access">منح الإذن</string>
+
+    <!-- Morphing Power Control Strings -->
+    <string name="no_network_connection">لا يوجد اتصال بالشبكة</string>
+    <string name="connect_network_subtitle">اتصل بشبكة Wi-Fi أو قم بتشغيل نقطة الاتصال المحمولة لبدء المشاركة</string>
+    <string name="tap_to_launch_server">اضغط على الزر لتشغيل خادم HTTP المحلي</string>
+    <string name="online_status">نشط</string>
+
+    <!-- Settings Sections & Controls -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="section_appearance">المظهر واللغة</string>
+    <string name="section_security">الأمان والوصول</string>
+    <string name="section_server_files">إعدادات الخادم والملفات</string>
+    <string name="section_about">حول التطبيق</string>
+
+    <string name="theme_setting_title">مظهر التطبيق</string>
+    <string name="theme_setting_desc">اختر المظهر الفاتح أو الداكن أو الافتراضي للنظام</string>
+    <string name="language_setting_title">لغة التطبيق</string>
+    <string name="language_setting_desc">اختر لغة عرض التطبيق</string>
+
+    <string name="require_pin_title">طلب رمز PIN عند الاتصال</string>
+    <string name="require_pin_desc">طلب رمز PIN مكون من 4 أرقام للدخول عبر المتصفح</string>
+    <string name="show_hidden_title">إظهار الملفات المخفية</string>
+    <string name="show_hidden_desc">إظهار الملفات والمجلدات التي تبدأ بـ \".\"</string>
+    <string name="server_port_title">منفذ الخادم</string>
+    <string name="server_port_desc_format">المنفذ: %1$s (يسري عند تشغيل الخادم القادم)</string>
+    <string name="keep_screen_on_title">إبقاء الشاشة قيد التشغيل</string>
+    <string name="keep_screen_on_desc">منع الشاشة من الإيقاف أثناء تشغيل الخادم</string>
+
+    <string name="developer_title">تصميم وتطوير</string>
+    <string name="github_title">المستودع الرسمي (GitHub)</string>
+
+    <string name="theme_dialog_title">اختر مظهر التطبيق</string>
+    <string name="language_dialog_title">اختر لغة التطبيق</string>
+    <string name="port_dialog_title">تعيين منفذ الخادم</string>
+    <string name="port_dialog_hint" tools:ignore="TypographyDashes">أدخل المنفذ (1024 - 65535)</string>
+    <string name="port_invalid_error">يجب أن يكون المنفذ بين 1024 و 65535</string>
+
+    <string name="theme_system_default">الافتراضي للنظام</string>
+    <string name="theme_light">المظهر الفاتح</string>
+    <string name="theme_dark">المظهر الداكن</string>
+    <string name="language_system_default">الافتراضي للنظام</string>
+    <string name="language_english">English (الإنجليزية)</string>
+    <string name="language_arabic">العربية</string>
+    <string name="cancel">إلغاء</string>
+    <string name="apply">تطبيق</string>
+    <string name="back">رجوع</string>
+    <string name="app_features">نقل لاسلكي سريع و مباشر • يعمل دون اتصال بالإنترنت</string>
+</resources>

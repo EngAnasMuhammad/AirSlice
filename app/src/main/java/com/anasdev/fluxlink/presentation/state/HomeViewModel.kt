@@ -20,6 +20,7 @@ import com.anasdev.fluxlink.domain.model.ServerStatus
 import com.anasdev.fluxlink.domain.repository.NetworkRepository
 import com.anasdev.fluxlink.domain.repository.ServerRepository
 import com.anasdev.fluxlink.domain.repository.SessionRepository
+import com.anasdev.fluxlink.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 import javax.inject.Inject
 
 data class HomeUiState(
@@ -47,7 +49,9 @@ data class HomeUiState(
     val qrCodeImage: ImageBitmap? = null,
     val pendingClientRequest: PendingClientRequest? = null,
     val connectedClients: List<ConnectedClient> = emptyList(),
-    val thumbnailCacheSizeBytes: Long = 0L
+    val thumbnailCacheSizeBytes: Long = 0L,
+    val formattedUptime: String = "00:00",
+    val isPinRequired: Boolean = true
 )
 
 @HiltViewModel
@@ -55,6 +59,7 @@ class HomeViewModel @Inject constructor(
     private val serverRepository: ServerRepository,
     private val networkRepository: NetworkRepository,
     private val sessionRepository: SessionRepository,
+    private val settingsRepository: SettingsRepository,
     private val lockManager: LockManager,
     private val qrCodeGenerator: QrCodeGenerator,
     private val thumbnailGenerator: ThumbnailGenerator
@@ -62,6 +67,8 @@ class HomeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private var serverStartTimeMillis: Long = 0L
 
     private val tickerFlow = flow {
         while (true) {
@@ -80,6 +87,13 @@ class HomeViewModel @Inject constructor(
             )
         }.launchIn(viewModelScope)
 
+        // Collect reactive PIN requirement setting
+        settingsRepository.getRequirePinAuth().onEach { pinRequired ->
+            _uiState.value = _uiState.value.copy(
+                isPinRequired = pinRequired
+            )
+        }.launchIn(viewModelScope)
+
         combine(
             networkRepository.observeNetworkState(),
             serverRepository.serverStatus,
@@ -93,6 +107,19 @@ class HomeViewModel @Inject constructor(
             val token = if (isRunning) serverRepository.sessionToken else ""
             val ip = networkState.selectedIpAddress
             val port = activePort ?: networkState.selectedPort
+
+            val uptimeStr = if (isRunning) {
+                if (serverStartTimeMillis == 0L) {
+                    serverStartTimeMillis = System.currentTimeMillis()
+                }
+                val elapsedSec = Math.max(0L, (System.currentTimeMillis() - serverStartTimeMillis) / 1000)
+                val mins = elapsedSec / 60
+                val secs = elapsedSec % 60
+                String.format(Locale.US, "%02d:%02d", mins, secs)
+            } else {
+                serverStartTimeMillis = 0L
+                "00:00"
+            }
 
             val qrUrl = if (isRunning && ip != null && token.isNotEmpty()) {
                 "http://$ip:$port?token=$token"
@@ -120,7 +147,9 @@ class HomeViewModel @Inject constructor(
                 qrCodeImage = qrImage,
                 pendingClientRequest = pendingRequest,
                 connectedClients = if (isRunning) connectedClients else emptyList(),
-                thumbnailCacheSizeBytes = thumbnailGenerator.cacheSizeBytesFlow.value
+                thumbnailCacheSizeBytes = thumbnailGenerator.cacheSizeBytesFlow.value,
+                formattedUptime = uptimeStr,
+                isPinRequired = _uiState.value.isPinRequired
             )
         }.onEach { updatedUiState ->
             _uiState.value = updatedUiState

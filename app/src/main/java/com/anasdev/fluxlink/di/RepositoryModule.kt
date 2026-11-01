@@ -3,9 +3,11 @@ package com.anasdev.fluxlink.di
 import com.anasdev.fluxlink.data.repository.NetworkRepositoryImpl
 import com.anasdev.fluxlink.data.repository.ServerRepositoryImpl
 import com.anasdev.fluxlink.data.repository.SessionRepositoryImpl
+import com.anasdev.fluxlink.data.repository.SettingsRepositoryImpl
 import com.anasdev.fluxlink.domain.repository.NetworkRepository
 import com.anasdev.fluxlink.domain.repository.ServerRepository
 import com.anasdev.fluxlink.domain.repository.SessionRepository
+import com.anasdev.fluxlink.domain.repository.SettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -33,4 +35,10 @@ abstract class RepositoryModule {
     abstract fun bindSessionRepository(
         impl: SessionRepositoryImpl
     ): SessionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSettingsRepository(
+        impl: SettingsRepositoryImpl
+    ): SettingsRepository
 }

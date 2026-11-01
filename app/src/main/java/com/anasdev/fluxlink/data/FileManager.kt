@@ -6,7 +6,12 @@ import android.os.StatFs
 import android.webkit.MimeTypeMap
 import com.anasdev.fluxlink.domain.model.DirectoryContent
 import com.anasdev.fluxlink.domain.model.FileMetadata
+import com.anasdev.fluxlink.domain.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -29,7 +34,18 @@ class FileManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val directBufferPool: DirectBufferPool,
     private val fileAccessTracker: FileAccessTracker,
+    private val settingsRepository: SettingsRepository,
 ) {
+
+    @Volatile
+    var showHiddenFiles: Boolean = false
+        private set
+
+    init {
+        settingsRepository.getShowHiddenFiles().onEach { showHidden ->
+            showHiddenFiles = showHidden
+        }.launchIn(CoroutineScope(Dispatchers.IO))
+    }
 
     fun getDefaultStoragePath(): String {
         return Environment.getExternalStorageDirectory().absolutePath
@@ -59,7 +75,8 @@ class FileManager @Inject constructor(
             null
         }
 
-        val files = targetDir.listFiles() ?: emptyArray()
+        val rawFiles = targetDir.listFiles() ?: emptyArray()
+        val files = if (showHiddenFiles) rawFiles else rawFiles.filter { !it.name.startsWith(".") }.toTypedArray()
         val itemsList = mutableListOf<FileMetadata>()
 
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())

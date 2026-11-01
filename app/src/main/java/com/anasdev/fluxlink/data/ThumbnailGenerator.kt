@@ -7,7 +7,6 @@ import android.graphics.ImageDecoder
 import android.media.MediaMetadataRetriever
 import android.media.ThumbnailUtils
 import android.os.Build
-import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -51,18 +50,16 @@ class ThumbnailGenerator @Inject constructor(
             // Non-blocking cleanup
         }
 
-        Log.e("THUMB_TRACE", "[INIT] Thumbnail dir initialized at: ${thumbDir.absolutePath}, exists=${thumbDir.exists()}")
         recalculateCacheSize()
     }
 
     /**
-     * Directly scans [thumbDir] filesystem, calculates total bytes, updates [_cacheSizeBytes], and logs.
+     * Directly scans [thumbDir] filesystem, calculates total bytes, updates [_cacheSizeBytes].
      * Called on startup, dialog launch, and cache clearing.
      */
     fun recalculateCacheSize(): Long {
         val sizeBytes = thumbDir.walkTopDown().filter { (it.isFile && it.extension == "webp") }.sumOf { it.length() }
         _cacheSizeBytes.value = sizeBytes
-        Log.e("THUMB_TRACE", "[CACHE SIZE] Current Cache Size: $sizeBytes bytes in ${thumbDir.absolutePath}")
         return sizeBytes
     }
 
@@ -83,7 +80,6 @@ class ThumbnailGenerator @Inject constructor(
             }
         }
         recalculateCacheSize()
-        Log.e("THUMB_TRACE", "[CACHE CLEAR] Thumbnail cache cleared completely.")
     }
 
     /**
@@ -91,20 +87,7 @@ class ThumbnailGenerator @Inject constructor(
      * and returns the saved [File] instance.
      */
     suspend fun getOrCreateThumbnail(targetFile: File): File? = withContext(Dispatchers.IO) {
-        Log.e("THUMB_TRACE", "[STEP 2] resolved='${targetFile.absolutePath}', exists=${targetFile.exists()}, canRead=${targetFile.canRead()}, ext='${targetFile.extension}', size=${targetFile.length()}")
-
-        if (!targetFile.exists()) {
-            Log.e("THUMB_TRACE", "[ABORT AT STEP 2 - FILE DOES NOT EXIST]: ${targetFile.absolutePath}")
-            return@withContext null
-        }
-
-        if (targetFile.isDirectory) {
-            Log.e("THUMB_TRACE", "[ABORT AT STEP 2 - FILE IS DIRECTORY]: ${targetFile.absolutePath}")
-            return@withContext null
-        }
-
-        if (targetFile.length() <= 0L) {
-            Log.e("THUMB_TRACE", "[ABORT AT STEP 2 - EMPTY FILE 0 BYTES]: ${targetFile.absolutePath}")
+        if (!targetFile.exists() || targetFile.isDirectory || targetFile.length() <= 0L) {
             return@withContext null
         }
 
@@ -116,15 +99,11 @@ class ThumbnailGenerator @Inject constructor(
         val cacheKey = "${targetFile.absolutePath}_${targetFile.lastModified()}".hashCode().toUInt().toString(16) + ".webp"
         val cachedFile = File(thumbDir, cacheKey)
 
-        Log.e("THUMB_TRACE", "[STEP 3 - CACHE CHECK] cacheKey='$cacheKey', cachedFile='${cachedFile.absolutePath}', exists=${cachedFile.exists()}, len=${cachedFile.length()}")
-
         // 1. FAST-PATH: Valid Disk Cache Lookup (< 1ms)
         if (cachedFile.exists()) {
             if (cachedFile.length() > 100L) {
-                Log.e("THUMB_TRACE", "[STEP 3 - CACHE HIT] Returning valid cached file: ${cachedFile.absolutePath}")
                 return@withContext cachedFile
             } else {
-                Log.e("THUMB_TRACE", "[STEP 3 - STUB DELETED] Deleting corrupted 0-byte stub: ${cachedFile.absolutePath}")
                 cachedFile.delete()
             }
         }
@@ -152,10 +131,7 @@ class ThumbnailGenerator @Inject constructor(
         val isVideo = ext in setOf("mp4", "mkv", "mov", "avi", "3gp", "webm")
         val isImage = ext in setOf("jpg", "jpeg", "png", "webp", "heic", "heif", "bmp", "gif", "dng", "tiff", "tif")
 
-        Log.e("THUMB_TRACE", "[STEP 4] Classified ${sourceFile.name}: ext='$ext', isVideo=$isVideo, isImage=$isImage")
-
         if (!isVideo && !isImage) {
-            Log.e("THUMB_TRACE", "[ABORT AT STEP 4 - UNSUPPORTED EXT]: '$ext' for ${sourceFile.name}")
             return null
         }
 
@@ -168,14 +144,12 @@ class ThumbnailGenerator @Inject constructor(
             }
 
             if (bitmap == null) {
-                Log.e("THUMB_TRACE", "[STEP 5 DECODE FAILURE] Failed to decode bitmap for: ${sourceFile.absolutePath}")
                 return null
             }
 
             // 3. NonCancellable Atomic Disk Write
             return withContext(NonCancellable) {
                 val tempFile = File(thumbDir, "$cacheKey.tmp")
-                Log.e("THUMB_TRACE", "[STEP 6 - WRITE START] Writing tempFile=${tempFile.absolutePath}")
 
                 try {
                     val format = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -196,31 +170,29 @@ class ThumbnailGenerator @Inject constructor(
                         if (cachedFile.exists()) {
                             cachedFile.delete()
                         }
-                        val renamed = tempFile.renameTo(cachedFile) || tempFile.copyTo(cachedFile, overwrite = true).exists()
+                        if (!tempFile.renameTo(cachedFile)) {
+                            tempFile.copyTo(cachedFile, overwrite = true)
+                        }
                         if (tempFile.exists()) tempFile.delete()
 
                         val finalLen = cachedFile.length()
-                        Log.e("THUMB_TRACE", "[STEP 6 - WRITE COMPLETE] tempLen=$tempLen, renameSuccess=$renamed, finalLen=$finalLen for ${sourceFile.name}")
 
                         // O(1) Fast Atomic Addition to Cache Telemetry
                         _cacheSizeBytes.value += finalLen
 
                         cachedFile
                     } else {
-                        Log.e("THUMB_TRACE", "[STEP 6 ERROR] tempFile missing or length <= 100L ($tempLen) for ${sourceFile.name}")
                         if (tempFile.exists()) tempFile.delete()
                         null
                     }
-                } catch (e: Throwable) {
-                    Log.e("THUMB_TRACE", "[STEP 6 EXCEPTION] Failed to write thumbnail for ${sourceFile.absolutePath}", e)
+                } catch (_: Throwable) {
                     if (tempFile.exists()) tempFile.delete()
                     if (cachedFile.exists()) cachedFile.delete()
                     null
                 }
             }
 
-        } catch (e: Throwable) {
-            Log.e("THUMB_TRACE", "[STEP 5 EXCEPTION] Failed thumbnail job for ${sourceFile.absolutePath}", e)
+        } catch (_: Throwable) {
             return null
         } finally {
             bitmap?.recycle()
@@ -245,7 +217,6 @@ class ThumbnailGenerator @Inject constructor(
                     options.inPreferredConfig = Bitmap.Config.RGB_565
                     val bm = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
                     if (bm != null) {
-                        Log.e("THUMB_TRACE", "[STEP 5 - DECODE SUCCESS] decodeByteArray decoded ${file.name}")
                         return bm
                     }
                 }
@@ -259,10 +230,7 @@ class ThumbnailGenerator @Inject constructor(
             try {
                 val size = android.util.Size(256, 256)
                 val bm = ThumbnailUtils.createImageThumbnail(file, size, null)
-                if (bm != null) {
-                    Log.e("THUMB_TRACE", "[STEP 5 - DECODE SUCCESS] ThumbnailUtils decoded ${file.name}")
-                    return bm
-                }
+                return bm
             } catch (_: Exception) {
                 // Fallback
             }
@@ -275,10 +243,7 @@ class ThumbnailGenerator @Inject constructor(
                 val bm = ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
                     decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
                 }
-                if (bm != null) {
-                    Log.e("THUMB_TRACE", "[STEP 5 - DECODE SUCCESS] ImageDecoder decoded ${file.name}")
-                    return bm
-                }
+                return bm
             } catch (_: Exception) {
                 // Fallback
             }
@@ -299,14 +264,10 @@ class ThumbnailGenerator @Inject constructor(
             options.inSampleSize = calculateInSampleSize(options, 256, 256)
             options.inJustDecodeBounds = false
 
-            val bm = FileInputStream(file).use { fis ->
+            FileInputStream(file).use { fis ->
                 BitmapFactory.decodeStream(fis, null, options)
             }
-
-            Log.e("THUMB_TRACE", "[STEP 5 - RESULT] FileInputStream decodeStream for ${file.name}: ${bm != null}")
-            bm
-        } catch (e: Exception) {
-            Log.e("THUMB_TRACE", "[STEP 5 EXCEPTION] generateImageThumbnail for ${file.absolutePath}", e)
+        } catch (_: Exception) {
             null
         }
     }
@@ -318,10 +279,7 @@ class ThumbnailGenerator @Inject constructor(
             try {
                 val size = android.util.Size(256, 256)
                 val bm = ThumbnailUtils.createVideoThumbnail(file, size, null)
-                if (bm != null) {
-                    Log.e("THUMB_TRACE", "[STEP 5 - DECODE SUCCESS] ThumbnailUtils video decoded ${file.name}")
-                    return bm
-                }
+                return bm
             } catch (_: Exception) {
                 // Fallback
             }
@@ -330,16 +288,13 @@ class ThumbnailGenerator @Inject constructor(
         val retriever = MediaMetadataRetriever()
         return try {
             retriever.setDataSource(file.absolutePath)
-            val bm = if (Build.VERSION.SDK_INT >= 27) {
+            if (Build.VERSION.SDK_INT >= 27) {
                 retriever.getScaledFrameAtTime(-1L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, 256, 256)
                     ?: retriever.getFrameAtTime(1000000L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
             } else {
                 retriever.getFrameAtTime(1000000L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
             }
-            Log.e("THUMB_TRACE", "[STEP 5 - RESULT] MediaMetadataRetriever video frame for ${file.name}: ${bm != null}")
-            bm
-        } catch (e: Exception) {
-            Log.e("THUMB_TRACE", "[STEP 5 EXCEPTION] generateVideoThumbnail for ${file.absolutePath}", e)
+        } catch (_: Exception) {
             null
         } finally {
             try {
