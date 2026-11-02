@@ -26,7 +26,7 @@
     <string name="hotspot_turbo_mode_active">⚡ Hotspot Turbo Mode Active</string>
     <string name="wifi_router_mode">📶 Wi-Fi Router Mode</string>
     <string name="server_disconnected">⚠️ Server Disconnected</string>
-    <string name="connected_devices_title">Connected Devices (%1$d)</string>
+    <string name="connected_devices_title">Connected Devices (%1$s)</string>
     <string name="no_active_sessions">No active browser sessions yet</string>
     <string name="client_activity_streaming">▶ Streaming: %1$s</string>
     <string name="client_activity_downloading">⬇ Downloading: %1$s</string>

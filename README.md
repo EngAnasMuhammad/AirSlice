@@ -1,16 +1,24 @@
-# ⚡ AirSlice v1.1.0 — High-Performance Android Local Web Server & HTTP 206 Media Streamer
+# ⚡ AirSlice v1.1.1 — High-Performance Android Local Web Server & HTTP 206 Media Streamer
 
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0%2B-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
-![Release](https://img.shields.io/badge/Release-v1.1.0-10B981?style=for-the-badge)
-![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2B%20MVVM-2EA043?style=for-the-badge)
+![Release](https://img.shields.io/badge/Release-v1.1.1-10B981?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Android-API%2026%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)
+![APK Size](https://img.shields.io/badge/APK%20Size-3.5%20MB-00C853?style=for-the-badge)
 
 **AirSlice** (`com.anasdev.fluxlink`) is an offline-first, embedded HTTP file server and low-latency media streaming engine for Android. It transforms any Android device into a zero-configuration cloud workspace and video streaming server accessible from any desktop or mobile browser over local Wi-Fi or Direct Mobile Hotspot—requiring **zero internet connection, zero cables, and zero client software installation**.
 
 ---
 
-## 🌟 What's New in Release v1.1.0
+## 🌟 What's New in Release v1.1.1
+
+* **🚀 Ultra-Slim 3.5 MB Release APK (95% Size Reduction):** Replaced heavy extended icon libraries with lightweight standalone vector assets and implemented crash-proof R8 resource/code shrinking (`-dontobfuscate`), dropping the Release APK size from 75 MB down to **3.51 MB**.
+* **⚡ Draw-Phase Animation & Recomposition Isolation:** Isolated the status dot pulse animation into `Modifier.graphicsLayer` (Draw-phase execution with 0 recompositions) and encapsulated the 1-second server uptime ticker into an isolated `@Composable` element.
+* **🛡️ Subsampled Thumbnail Memory Safety:** Enforced `RGB_565` bitmap configuration for subsampled image thumbnail decoding with explicit bitmap recycling to prevent GC pauses and memory spikes.
+
+---
+
+## 🌟 Previous Highlights (Release v1.1.0)
 
 * **🔴 Interactive Morphing Power Control & Glassmorphic Top Bar:** Completely redesigned power button featuring a large circular Emerald Green control (`148.dp`) with a pulsing halo ring in Stopped mode that smoothly morphs (`AnimatedContent` + `spring`) into a top-docked **Translucent Glassmorphic Status Bar** with a 1-tap **Circular Red Stop Button (`48.dp`)**, live **Server Uptime Timer (`MM:SS`)**, and interactive **`PIN` Badge**.
 * **⚙️ Expanded Material 3 Settings Workspace & Preferences:** Categorized preferences organized into **Appearance & Language** (Theme Mode, App Language), **Security & Access** (Instant PIN Auth Toggle), **Server & Files** (Show Hidden `.files`, Custom Server Port `1024..65535`, Keep Screen On), and an **About** section with developer & GitHub repository links.

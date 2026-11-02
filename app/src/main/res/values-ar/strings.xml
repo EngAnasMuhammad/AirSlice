@@ -1,5 +1,4 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">إيرسلايس</string>
     <string name="notification_permission_required">يلزم الحصول على إذن الإشعارات لتشغيل خدمة الخادم في الخلفية.</string>
     <string name="storage_permission_required">يلزم الحصول على إذن الوصول إلى جميع الملفات لمشاركة الملفات المحلية.</string>
     <string name="connect_wifi_or_hotspot_prompt">يرجى الاتصال بشبكة Wi-Fi أو تشغيل نقطة الاتصال الفعالة لبدء تشغيل الخادم.</string>
@@ -26,7 +25,7 @@
     <string name="hotspot_turbo_mode_active">⚡ وضع نقطة الاتصال السريع نشط</string>
     <string name="wifi_router_mode">وضع راوتر (Wi-Fi) 📶</string>
     <string name="server_disconnected">⚠️ الخادم غير متصل</string>
-    <string name="connected_devices_title">الأجهزة المتصلة (%1$d)</string>
+    <string name="connected_devices_title">الأجهزة المتصلة (%1$s)</string>
     <string name="no_active_sessions">لا توجد جلسات متصفح نشطة حالياً</string>
     <string name="client_activity_streaming">▶ بث: %1$s</string>
     <string name="client_activity_downloading">⬇ تنزيل: %1$s</string>

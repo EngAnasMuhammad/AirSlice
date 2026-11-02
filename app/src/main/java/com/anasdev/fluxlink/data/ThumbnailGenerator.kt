@@ -195,7 +195,11 @@ class ThumbnailGenerator @Inject constructor(
         } catch (_: Throwable) {
             return null
         } finally {
-            bitmap?.recycle()
+            bitmap?.let {
+                if (!it.isRecycled) {
+                    it.recycle()
+                }
+            }
         }
     }
 
@@ -263,6 +267,7 @@ class ThumbnailGenerator @Inject constructor(
 
             options.inSampleSize = calculateInSampleSize(options, 256, 256)
             options.inJustDecodeBounds = false
+            options.inPreferredConfig = Bitmap.Config.RGB_565
 
             FileInputStream(file).use { fis ->
                 BitmapFactory.decodeStream(fis, null, options)

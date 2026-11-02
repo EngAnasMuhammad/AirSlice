@@ -1,16 +1,20 @@
-# Keep Hilt & Dagger Generated Classes & Annotations
+# NEVER obfuscate class/method/field names (prevents reflection & Ktor crashes)
+-dontobfuscate
+-dontoptimize
+
+# Keep 100% of our app's own classes, fields, and methods untouched
 -keep class com.anasdev.fluxlink.** { *; }
--keepclassmembers class * {
-    @javax.inject.Inject <init>(...);
-    @dagger.Provides <init>(...);
-}
--keep class * extends androidx.lifecycle.ViewModel { *; }
+-keep class nasdev.fluxlink.** { *; }
+
+# Keep 100% of Ktor, Coroutines, Kotlinx Serialization, and Hilt
+-keep class io.ktor.** { *; }
+-keep class kotlinx.coroutines.** { *; }
+-keep class kotlinx.serialization.** { *; }
 -keep class dagger.hilt.** { *; }
--keep class androidx.hilt.** { *; }
+-keep class javax.inject.** { *; }
+-keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod
 
-# Keep Domain Models & Data Classes
--keep class com.anasdev.fluxlink.domain.model.** { *; }
--keep class com.anasdev.fluxlink.data.** { *; }
-
-# Keep Android Foreground Services & Receivers
--keep class com.anasdev.fluxlink.service.ServerForegroundService { *; }
+-dontwarn io.ktor.**
+-dontwarn kotlinx.**
+-dontwarn org.slf4j.**
+-dontwarn java.lang.instrument.**

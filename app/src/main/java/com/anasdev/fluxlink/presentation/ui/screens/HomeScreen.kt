@@ -48,11 +48,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -240,19 +238,39 @@ fun HomeScreen(
                 )
             },
             confirmButton = {
-                Button(
-                    onClick = { viewModel.approveConnectionRequest(pendingReq.requestId) }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(id = R.string.approve_one_tap), fontWeight = FontWeight.Bold, fontSize = 24.sp)
+                    OutlinedButton(
+                        onClick = { viewModel.denyConnectionRequest(pendingReq.requestId) },
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.deny),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    Button(
+                        onClick = { viewModel.approveConnectionRequest(pendingReq.requestId) },
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.approve_one_tap),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
                 }
             },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { viewModel.denyConnectionRequest(pendingReq.requestId) }
-                ) {
-                    Text(stringResource(id = R.string.deny), fontSize = 24.sp)
-                }
-            }
+            dismissButton = {}
         )
     }
 
@@ -537,7 +555,7 @@ private fun PowerControlButton(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = if (isNetworkAvailable) Icons.Default.PowerSettingsNew else Icons.Default.WifiOff,
+                painter = painterResource(id = if (isNetworkAvailable) R.drawable.ic_power_settings else R.drawable.ic_wifi_off),
                 contentDescription = "Power Control",
                 modifier = Modifier.size(54.dp),
                 tint = iconTint
@@ -546,14 +564,10 @@ private fun PowerControlButton(
     }
 }
 
-/**
- * State C: Morphed Glassmorphic Top Bar with Red Stop Button & Telemetry.
- */
 @Composable
-private fun MorphingGlassmorphicControlBar(
-    uiState: HomeUiState,
-    onStopServer: () -> Unit,
-    onCopyPin: (String) -> Unit
+private fun PulsingStatusDot(
+    modifier: Modifier = Modifier,
+    color: Color = Color(0xFF10B981)
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulseDotTransition")
     val dotAlpha by infiniteTransition.animateFloat(
@@ -566,6 +580,48 @@ private fun MorphingGlassmorphicControlBar(
         label = "dotAlpha"
     )
 
+    Box(
+        modifier = modifier
+            .size(8.dp)
+            .graphicsLayer {
+                alpha = dotAlpha
+            }
+            .clip(CircleShape)
+            .background(color)
+    )
+}
+
+@Composable
+private fun UptimeCounter(
+    formattedUptime: String,
+    modifier: Modifier = Modifier
+) {
+    val uptimeAscii = remember(formattedUptime) {
+        "\u202D" + formattedUptime.toAsciiDigits() + "\u202C"
+    }
+    Text(
+        text = uptimeAscii,
+        style = MaterialTheme.typography.labelLarge.copy(
+            localeList = androidx.compose.ui.text.intl.LocaleList("en"),
+            fontFeatureSettings = "tnum"
+        ),
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Bold,
+        fontFamily = FontFamily.Monospace,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = modifier
+    )
+}
+
+/**
+ * State C: Morphed Glassmorphic Top Bar with Red Stop Button & Telemetry.
+ */
+@Composable
+private fun MorphingGlassmorphicControlBar(
+    uiState: HomeUiState,
+    onStopServer: () -> Unit,
+    onCopyPin: (String) -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -590,7 +646,7 @@ private fun MorphingGlassmorphicControlBar(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.PowerSettingsNew,
+                    painter = painterResource(id = R.drawable.ic_power_settings),
                     contentDescription = "Stop Server",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
@@ -605,12 +661,7 @@ private fun MorphingGlassmorphicControlBar(
                     .weight(1f)
                     .padding(horizontal = 8.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF10B981).copy(alpha = dotAlpha))
-                )
+                PulsingStatusDot()
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = stringResource(id = R.string.online_status),
@@ -623,18 +674,7 @@ private fun MorphingGlassmorphicControlBar(
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                val uptimeAscii = ("\u202D" + uiState.formattedUptime.toAsciiDigits() + "\u202C")
-                Text(
-                    text = uptimeAscii,
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        localeList = androidx.compose.ui.text.intl.LocaleList("en"),
-                        fontFeatureSettings = "tnum"
-                    ),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                UptimeCounter(formattedUptime = uiState.formattedUptime)
             }
 
             // End: Interactive PIN Badge (Only shown when uiState.isPinRequired == true)
@@ -1045,7 +1085,7 @@ private fun ConnectedDevicesSection(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
-            text = stringResource(id = R.string.connected_devices_title, clients.size),
+            text = stringResource(id = R.string.connected_devices_title, clients.size.toString().toAsciiDigits()),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
@@ -1358,7 +1398,7 @@ private fun ServerRunningConnectionCard(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.ContentCopy,
+                                        painter = painterResource(id = R.drawable.ic_content_copy),
                                         contentDescription = "Copy URL",
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -1467,7 +1507,7 @@ private fun ServerRunningConnectionCardLandscape(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ContentCopy,
+                                    painter = painterResource(id = R.drawable.ic_content_copy),
                                     contentDescription = "Copy",
                                     modifier = Modifier.size(14.dp)
                                 )

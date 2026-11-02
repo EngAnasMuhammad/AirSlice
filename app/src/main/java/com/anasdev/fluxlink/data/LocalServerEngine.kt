@@ -331,14 +331,11 @@ class LocalServerEngine @Inject constructor(
 
                 "/api/thumbnail" -> withContext(serverDispatchers.thumbnailDispatcher) {
                     val filePath = queryParams["path"]
-                    Log.e("THUMB_TRACE", "[STEP 1] /thumbnail hit. filePath='$filePath'")
                     if (filePath.isNullOrBlank()) {
-                        Log.e("THUMB_TRACE", "[ABORT AT STEP 1] Thumbnail path missing or blank")
                         send404Response(outputStream, "Thumbnail path missing")
                     } else {
                         val cachedThumbFile = thumbnailGenerator.getOrGenerateWebpThumbnail(filePath)
                         if (cachedThumbFile != null && cachedThumbFile.exists() && cachedThumbFile.length() > 0L) {
-                            Log.e("THUMB_TRACE", "[STEP 7] Serving thumbnail for ${File(filePath).name} (${cachedThumbFile.length()} bytes)")
                             sendFileNioChannelResponse(
                                 outputStream = outputStream,
                                 file = cachedThumbFile,
@@ -347,7 +344,6 @@ class LocalServerEngine @Inject constructor(
                                 cacheControl = "public, max-age=86400, immutable"
                             )
                         } else {
-                            Log.e("THUMB_TRACE", "[ABORT AT STEP 7] Thumbnail file not available or 0 bytes for $filePath")
                             send404Response(outputStream, "Thumbnail not available")
                         }
                     }

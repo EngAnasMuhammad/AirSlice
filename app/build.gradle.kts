@@ -13,8 +13,8 @@ android {
         applicationId = "com.anasdev.fluxlink"
         minSdk = 26
         targetSdk = 37
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -47,8 +47,8 @@ android {
             resValue("string", "app_name", "AirSlice")
         }
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             val keystorePath = System.getenv("KEYSTORE_FILE") ?: "release.keystore"
             val keystoreFile = file(keystorePath)
             signingConfig = if (keystoreFile.exists()) {
@@ -83,7 +83,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material.icons.core)
-    implementation(libs.androidx.compose.material.icons.extended)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
