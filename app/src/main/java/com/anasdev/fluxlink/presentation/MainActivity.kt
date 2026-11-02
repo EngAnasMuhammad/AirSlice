@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
 
             // Keep Screen On While Server is Active
             LaunchedEffect(settingsState.keepScreenOn, homeState.serverStatus) {
-                if (settingsState.keepScreenOn && homeState.serverStatus == ServerStatus.RUNNING) {
+                if (settingsState.keepScreenOn && (homeState.serverStatus == ServerStatus.RUNNING)) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 } else {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

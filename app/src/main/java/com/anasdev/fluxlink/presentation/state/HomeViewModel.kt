@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 data class HomeUiState(
     val networkState: NetworkState = NetworkState(),
@@ -73,7 +74,7 @@ class HomeViewModel @Inject constructor(
     private val tickerFlow = flow {
         while (true) {
             emit(System.currentTimeMillis())
-            delay(1000L)
+            delay(1000L.milliseconds)
         }
     }
 
@@ -112,7 +113,8 @@ class HomeViewModel @Inject constructor(
                 if (serverStartTimeMillis == 0L) {
                     serverStartTimeMillis = System.currentTimeMillis()
                 }
-                val elapsedSec = Math.max(0L, (System.currentTimeMillis() - serverStartTimeMillis) / 1000)
+                val elapsedSec =
+                    0L.coerceAtLeast((System.currentTimeMillis() - serverStartTimeMillis) / 1000)
                 val mins = elapsedSec / 60
                 val secs = elapsedSec % 60
                 String.format(Locale.US, "%02d:%02d", mins, secs)
@@ -121,7 +123,7 @@ class HomeViewModel @Inject constructor(
                 "00:00"
             }
 
-            val qrUrl = if (isRunning && ip != null) {
+            val qrUrl = if (isRunning && (ip != null)) {
                 if (token.isNotEmpty()) {
                     "http://$ip:$port?token=$token"
                 } else {
@@ -129,9 +131,9 @@ class HomeViewModel @Inject constructor(
                 }
             } else null
 
-            val qrBitmap = if (qrUrl != null) {
-                qrCodeGenerator.generateQrCodeBitmap(qrUrl, 320)
-            } else null
+            val qrBitmap = qrUrl?.let { url ->
+                qrCodeGenerator.generateQrCodeBitmap(url, 320)
+            }
 
             // Pre-convert QR Bitmap to Compose ImageBitmap off the main UI thread
             val qrImage = withContext(Dispatchers.Default) {
@@ -180,7 +182,7 @@ class HomeViewModel @Inject constructor(
                     data = "package:${context.packageName}".toUri()
                 }
                 context.startActivity(intent)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
                 context.startActivity(intent)
             }

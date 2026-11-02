@@ -137,7 +137,7 @@ fun HomeScreen(
     val shareChooserTitle = stringResource(id = R.string.share_chooser_title)
 
     val isServerRunning = uiState.serverStatus == ServerStatus.RUNNING
-    val isNetworkAvailable = uiState.networkState.isConnected && uiState.networkState.selectedIpAddress != null
+    val isNetworkAvailable = uiState.networkState.isConnected && (uiState.networkState.selectedIpAddress != null)
 
     // Auto-refresh network interfaces & connection mode state whenever returning from System Settings
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -356,7 +356,6 @@ fun HomeScreen(
                             verticalArrangement = Arrangement.spacedBy(if (isLandscape) 8.dp else 24.dp)
                         ) {
                             PowerControlButton(
-                                isRunning = false,
                                 isNetworkAvailable = isNetworkAvailable,
                                 onClick = { onToggleServer() }
                             )
@@ -459,9 +458,7 @@ fun HomeScreen(
                             ServerRunningConnectionCard(
                                 uiState = uiState,
                                 onCopyUrl = { copyToClipboard(it, serverUrlLabel) },
-                                onShareUrl = { shareUrl(it) },
-                                onCopyPin = { copyToClipboard(it, pairingPinLabel) },
-                                showQrCode = true
+                                onShareUrl = { shareUrl(it) }
                             )
 
                             ConnectedDevicesSection(
@@ -481,7 +478,6 @@ fun HomeScreen(
  */
 @Composable
 private fun PowerControlButton(
-    isRunning: Boolean,
     isNetworkAvailable: Boolean,
     onClick: () -> Unit
 ) {
@@ -509,8 +505,8 @@ private fun PowerControlButton(
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(175.dp)
     ) {
-        // Outer Pulsing Halo Ring for State B
-        if (isNetworkAvailable && !isRunning) {
+        // Outer Pulsing Halo Ring for State B (Network Available, Ready to Launch)
+        if (isNetworkAvailable) {
             Box(
                 modifier = Modifier
                     .size(165.dp)
@@ -1112,32 +1108,32 @@ private fun ConnectedDeviceRowItem(
     client: ConnectedClient,
     onRevoke: () -> Unit
 ) {
-    val activity = client.currentActivity
+    val (activityType, targetFileName) = client.currentActivity
 
     val defaultVideoName = stringResource(id = R.string.default_video_name)
     val defaultFileName = stringResource(id = R.string.default_file_name)
     val defaultMediaName = stringResource(id = R.string.default_media_name)
     val defaultStorageName = stringResource(id = R.string.default_storage_name)
 
-    val (activityText, activityColor) = when (activity.type) {
+    val (activityText, activityColor) = when (activityType) {
         ClientActivityType.STREAMING_VIDEO -> Pair(
-            stringResource(id = R.string.client_activity_streaming, activity.targetFileName ?: defaultVideoName),
+            stringResource(id = R.string.client_activity_streaming, targetFileName ?: defaultVideoName),
             Color(0xFF00E676)
         )
         ClientActivityType.DOWNLOADING -> Pair(
-            stringResource(id = R.string.client_activity_downloading, activity.targetFileName ?: defaultFileName),
+            stringResource(id = R.string.client_activity_downloading, targetFileName ?: defaultFileName),
             Color(0xFF40C4FF)
         )
         ClientActivityType.UPLOADING -> Pair(
-            stringResource(id = R.string.client_activity_uploading, activity.targetFileName ?: defaultFileName),
+            stringResource(id = R.string.client_activity_uploading, targetFileName ?: defaultFileName),
             Color(0xFFFFD740)
         )
         ClientActivityType.VIEWING_MEDIA -> Pair(
-            stringResource(id = R.string.client_activity_viewing, activity.targetFileName ?: defaultMediaName),
+            stringResource(id = R.string.client_activity_viewing, targetFileName ?: defaultMediaName),
             MaterialTheme.colorScheme.primary
         )
         ClientActivityType.BROWSING -> Pair(
-            stringResource(id = R.string.client_activity_browsing, activity.targetFileName ?: defaultStorageName),
+            stringResource(id = R.string.client_activity_browsing, targetFileName ?: defaultStorageName),
             MaterialTheme.colorScheme.onSurfaceVariant
         )
         ClientActivityType.IDLE -> Pair(
@@ -1165,14 +1161,16 @@ private fun ConnectedDeviceRowItem(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
+                val isHighActivity = activityType == ClientActivityType.STREAMING_VIDEO ||
+                        activityType == ClientActivityType.DOWNLOADING ||
+                        activityType == ClientActivityType.UPLOADING
+
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
                         .background(
-                            if (activity.type == ClientActivityType.STREAMING_VIDEO ||
-                                activity.type == ClientActivityType.DOWNLOADING ||
-                                activity.type == ClientActivityType.UPLOADING)
+                            if (isHighActivity)
                                 Color(0xFF003829)
                             else
                                 MaterialTheme.colorScheme.primaryContainer
@@ -1183,9 +1181,7 @@ private fun ConnectedDeviceRowItem(
                         painter = painterResource(id = R.drawable.ic_server_notification),
                         contentDescription = "Device",
                         modifier = Modifier.size(20.dp),
-                        tint = if (activity.type == ClientActivityType.STREAMING_VIDEO ||
-                            activity.type == ClientActivityType.DOWNLOADING ||
-                            activity.type == ClientActivityType.UPLOADING)
+                        tint = if (isHighActivity)
                             Color(0xFF69F0AE)
                         else
                             MaterialTheme.colorScheme.primary
@@ -1315,13 +1311,10 @@ private fun ConnectionModePill(
 private fun ServerRunningConnectionCard(
     uiState: HomeUiState,
     onCopyUrl: (String) -> Unit,
-    onShareUrl: (String) -> Unit,
-    onCopyPin: (String) -> Unit,
-    showQrCode: Boolean = true
+    onShareUrl: (String) -> Unit
 ) {
     val activePort = uiState.activeServerPort ?: uiState.networkState.selectedPort
-    val ip = uiState.networkState.selectedIpAddress
-    val serverUrl = if (ip != null) "http://$ip:$activePort" else null
+    val serverUrl = uiState.networkState.selectedIpAddress?.let { ip -> "http://$ip:$activePort" }
     val qrImage = uiState.qrCodeImage
 
     Card(
@@ -1338,7 +1331,7 @@ private fun ServerRunningConnectionCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (showQrCode && qrImage != null) {
+            if (qrImage != null) {
                 Box(
                     modifier = Modifier
                         .size(190.dp)

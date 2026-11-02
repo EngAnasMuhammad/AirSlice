@@ -770,7 +770,7 @@ private fun PortSelectionDialog(
                     onValueChange = {
                         textValue = it.filter { char -> char.isDigit() }
                         val portNum = textValue.toIntOrNull()
-                        isError = portNum == null || portNum !in 1024..65535
+                        isError = (portNum == null) || (portNum !in 1024..65535)
                     },
                     label = { Text(stringResource(id = R.string.port_dialog_hint)) },
                     isError = isError,
