@@ -154,6 +154,8 @@ body {
     padding: 9px 16px;
     border-radius: 8px;
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: background 0.2s, transform 0.15s;
 }
 
@@ -171,6 +173,8 @@ body {
     padding: 8px 14px;
     border-radius: 8px;
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: background 0.2s;
 }
 
@@ -297,7 +301,7 @@ body {
 /* Dynamic Grid */
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
     gap: 20px;
 }
 
@@ -314,6 +318,8 @@ body {
     cursor: pointer;
     transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
     user-select: none;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .item-card:hover {
@@ -373,6 +379,9 @@ body {
     font-size: 13px;
     font-weight: 600;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    display: block;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
@@ -384,35 +393,58 @@ body {
     font-size: 11px;
     color: var(--text-muted);
     margin-bottom: 10px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .item-actions-row {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     width: 100%;
     justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap; /* Prevent action buttons from wrapping onto 2 lines */
+    margin-top: auto;
 }
 
 .btn-download {
     background-color: var(--primary);
     color: white;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    padding: 6px 12px;
-    border-radius: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
     border: none;
     text-decoration: none;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.15s;
     text-align: center;
     cursor: pointer;
+    white-space: nowrap; /* Ensure button text never breaks into two lines */
+    flex-shrink: 0; /* Prevent flexbox from squishing button text */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
 .btn-download:hover {
     background-color: var(--primary-hover);
 }
 
+.btn-preview-item,
+.btn-zip-item {
+    flex: 1; /* Allow primary action button to expand gracefully in row */
+    min-width: 0;
+}
+
 .btn-icon-only {
-    padding: 6px 8px;
+    padding: 7px 10px;
+    flex-shrink: 0;
 }
 
 .loading-spinner {
@@ -526,18 +558,22 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 18px;
     border-bottom: 1px solid var(--border-color);
 }
 
 .lightbox-title-group {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
     overflow: hidden;
 }
 
 .lightbox-file-icon {
-    font-size: 22px;
+    font-size: 24px;
+    flex-shrink: 0;
 }
 
 .lightbox-title {
@@ -547,29 +583,39 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .lightbox-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
 }
 
 .btn-lb-action {
     background-color: var(--bg-card-hover);
     color: var(--text-main);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 20px; /* Increased overall width and padding for buttons beside file name */
     border-radius: 8px;
     text-decoration: none;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.15s;
     border: none;
     cursor: pointer;
+    white-space: nowrap; /* Prevent button text from breaking into two lines */
+    flex-shrink: 0; /* Prevent flexbox from squishing action buttons beside file name */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
 .btn-lb-action:hover {
     background-color: var(--border-color);
+    transform: translateY(-1px);
 }
 
 .btn-lb-primary {
@@ -586,6 +632,12 @@ body {
     border: none;
     color: var(--text-muted);
     font-size: 22px;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    transition: color 0.2s, background 0.2s;
+}
     cursor: pointer;
     padding: 4px 10px;
     border-radius: 8px;
