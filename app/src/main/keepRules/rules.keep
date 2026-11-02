@@ -18,3 +18,4 @@
 -dontwarn kotlinx.**
 -dontwarn org.slf4j.**
 -dontwarn java.lang.instrument.**
+-dontwarn com.google.zxing.**

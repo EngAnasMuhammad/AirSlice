@@ -1,8 +1,8 @@
-# ⚡ AirSlice v1.1.1 — High-Performance Android Local Web Server & HTTP 206 Media Streamer
+# ⚡ AirSlice v1.1.2 — High-Performance Android Local Web Server & HTTP 206 Media Streamer
 
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0%2B-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
-![Release](https://img.shields.io/badge/Release-v1.1.1-10B981?style=for-the-badge)
+![Release](https://img.shields.io/badge/Release-v1.1.2-10B981?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Android-API%2026%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![APK Size](https://img.shields.io/badge/APK%20Size-3.5%20MB-00C853?style=for-the-badge)
 
@@ -10,7 +10,15 @@
 
 ---
 
-## 🌟 What's New in Release v1.1.1
+## 🌟 What's New in Release v1.1.2
+
+- **📷 Standards-Compliant ISO/IEC 18004 QR Code Generation:** Replaced mock/hash matrix rendering with a real, standards-compliant pure-math ZXing QR encoder (`com.google.zxing:core:3.5.3`). Supports instant phone camera recognition with proper hollow-ring finder patterns (`7x7` outer ring, `5x5` white ring, `3x3` inner square) and seamless one-scan browser auto-authentication.
+- **🔔 Foreground Service Notification Reliability:** Ensured foreground service notification channel initialization and active URL updates execute properly with zero permission or notification delivery bottlenecks.
+- **📦 Maintained Lean APK Footprint:** R8 stripped all unused 1D/2D symbologies, preserving an ultra-slim **3.53 MB** Release APK size.
+
+---
+
+## 🌟 Previous Highlights (Release v1.1.1)
 
 - **🚀 Ultra-Slim 3.5 MB Release APK (95% Size Reduction):** Replaced heavy extended icon libraries with lightweight standalone Material vector assets and implemented crash-proof R8 resource/code shrinking (`-dontobfuscate`), dropping the Release APK size from 75 MB down to **3.51 MB**.
 - **⚡ Draw-Phase Animation & Recomposition Isolation:** Isolated the status dot pulse animation into `Modifier.graphicsLayer` (Draw-phase execution with 0 recompositions) and encapsulated the 1-second server uptime ticker into an isolated `@Composable` element.

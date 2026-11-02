@@ -121,8 +121,12 @@ class HomeViewModel @Inject constructor(
                 "00:00"
             }
 
-            val qrUrl = if (isRunning && ip != null && token.isNotEmpty()) {
-                "http://$ip:$port?token=$token"
+            val qrUrl = if (isRunning && ip != null) {
+                if (token.isNotEmpty()) {
+                    "http://$ip:$port?token=$token"
+                } else {
+                    "http://$ip:$port"
+                }
             } else null
 
             val qrBitmap = if (qrUrl != null) {
