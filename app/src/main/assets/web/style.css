@@ -46,6 +46,18 @@ body {
     gap: 20px;
 }
 
+.navbar-top-row {
+    display: contents; /* On desktop, let children participate directly in navbar flex */
+}
+
+.navbar-action-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    max-width: 580px;
+}
+
 .navbar-left {
     display: flex;
     align-items: center;
@@ -201,6 +213,36 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+.breadcrumbs-left-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+}
+
+.btn-nav-back {
+    background-color: var(--bg-main);
+    color: var(--primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 800;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.btn-nav-back:hover {
+    background-color: var(--bg-card-hover);
+    transform: translateX(-2px);
 }
 
 .breadcrumbs-list {
@@ -1070,6 +1112,43 @@ body {
     background-color: var(--border-color);
 }
 
+.confirm-modal-card {
+    max-width: 440px;
+}
+
+.confirm-desc-content {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.confirm-warning-box {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #fca5a5;
+    text-align: left;
+    line-height: 1.5;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 14px;
+    width: 100%;
+}
+
+.confirm-modal-actions .btn-primary,
+.confirm-modal-actions .btn-secondary {
+    width: auto;
+    flex: 1;
+    max-width: 160px;
+}
+
 .status-subtext {
     margin-top: 10px;
     font-size: 12px;
@@ -1083,3 +1162,633 @@ body {
     margin-top: 12px;
     min-height: 20px;
 }
+
+/* ==========================================================================
+   📱 COMPREHENSIVE RESPONSIVE & ORIENTATION-AWARE ADAPTIVE SYSTEM
+   Supports: Mobile Portrait (<640px), Mobile Landscape (landscape & max-height),
+   Tablets (641px-1024px), and Desktop Screens (>1025px).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. TABLETS & SMALL DESKTOPS (<= 1024px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+    .navbar {
+        padding: 12px 20px;
+        gap: 14px;
+    }
+
+    .search-box-wrapper {
+        max-width: 320px;
+    }
+
+    .storage-container {
+        min-width: 140px;
+    }
+
+    .container {
+        padding: 20px;
+    }
+
+    .grid {
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 16px;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   2. MOBILE DEVICES & PHONES (<= 768px)
+   Eliminates horizontal stretching in top navbar, breadcrumbs, modals, and grid.
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* Responsive Stacked Navbar */
+    .navbar {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px 14px;
+        gap: 8px;
+    }
+
+    .navbar-top-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .navbar-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .logo-title {
+        font-size: 16px;
+    }
+
+    .connection-badge {
+        font-size: 10px;
+        padding: 2px 7px;
+    }
+
+    .navbar-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+
+    /* Row 2: Search Box + Action Buttons */
+    .navbar-action-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        margin-top: 2px;
+    }
+
+    .navbar-action-row .search-box-wrapper {
+        flex: 1;
+        min-width: 0;
+        margin-top: 0;
+    }
+
+    .navbar-action-row .btn-action-outline {
+        flex-shrink: 0;
+        font-size: 11px;
+        padding: 7px 10px;
+        border-radius: 8px;
+        white-space: nowrap;
+        max-width: none;
+    }
+
+    /* Keep storage bar visible and nicely formatted on mobile */
+    .storage-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        width: 100%;
+        margin-top: 2px;
+    }
+
+    .storage-info {
+        font-size: 10px;
+        color: var(--text-muted);
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .progress-bar-bg {
+        height: 4px;
+    }
+
+    .btn-action-primary {
+        font-size: 11px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+
+    /* Search input style */
+    .search-input {
+        width: 100%;
+        font-size: 13px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        display: block;
+    }
+
+    /* Container Spacing */
+    .container {
+        padding: 14px 12px;
+    }
+
+    /* Breadcrumbs & Toolbar Responsive Stacking */
+    .breadcrumbs-card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 12px 14px;
+        margin-bottom: 16px;
+    }
+
+    .breadcrumbs-list {
+        overflow-x: auto;
+        white-space: nowrap;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+        padding-bottom: 2px;
+    }
+
+    .breadcrumbs-list::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+    }
+
+    .nav-toolbar-right {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .sort-controls-group {
+        flex: 1;
+        min-width: 0;
+        justify-content: space-between;
+    }
+
+    .sort-select {
+        font-size: 11px;
+        padding: 4px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .btn-select-toggle {
+        font-size: 11px;
+        padding: 6px 10px;
+        flex-shrink: 0;
+    }
+
+    .item-badge {
+        font-size: 11px;
+        padding: 4px 8px;
+        flex-shrink: 0;
+    }
+
+    /* Adaptive 2-Column Grid on Mobile */
+    .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .item-card {
+        padding: 10px;
+        border-radius: 12px;
+    }
+
+    .thumb-wrapper {
+        height: 96px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+    }
+
+    .icon-large {
+        font-size: 36px;
+    }
+
+    .item-title {
+        font-size: 12px;
+        margin-bottom: 2px;
+    }
+
+    .item-sub {
+        font-size: 10px;
+        margin-bottom: 8px;
+    }
+
+    /* Compact Mobile Card Action Buttons */
+    .item-actions-row {
+        gap: 6px;
+    }
+
+    .btn-download {
+        font-size: 11px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        gap: 4px;
+    }
+
+    .btn-icon-only {
+        padding: 6px 8px;
+    }
+
+    /* Mobile Touch-Target Checkbox Optimization */
+    .card-checkbox {
+        top: 6px;
+        left: 6px;
+        width: 22px;
+        height: 22px;
+    }
+
+    /* Mobile Floating Batch Bar */
+    .batch-bar {
+        width: calc(100% - 24px);
+        max-width: 440px;
+        bottom: 16px;
+        padding: 10px 16px;
+        gap: 10px;
+        border-radius: 14px;
+    }
+
+    .batch-count-badge {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+
+    .batch-size {
+        font-size: 10px;
+    }
+
+    .btn-batch-zip {
+        font-size: 11px;
+        padding: 6px 12px;
+    }
+
+    .btn-batch-clear {
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+
+    /* Mobile Fullscreen-Like Lightbox Modal */
+    .lightbox-container {
+        width: 95vw;
+        max-width: 95vw;
+        max-height: 90vh;
+        border-radius: 16px;
+    }
+
+    .lightbox-header {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .lightbox-title-group {
+        gap: 6px;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .lightbox-title {
+        font-size: 13px;
+        max-width: 140px;
+    }
+
+    .lightbox-file-icon {
+        font-size: 18px;
+    }
+
+    .lightbox-actions {
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .btn-lb-action {
+        font-size: 11px;
+        padding: 6px 10px;
+        white-space: nowrap;
+    }
+
+    .btn-lb-close {
+        padding: 4px 6px;
+        font-size: 18px;
+    }
+
+    .lightbox-content {
+        padding: 12px;
+        overflow-y: auto;
+    }
+
+    .metadata-panel {
+        padding: 14px;
+        border-radius: 10px;
+    }
+
+    .meta-heading {
+        font-size: 13px;
+        margin-bottom: 10px;
+    }
+
+    .meta-list {
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .meta-val {
+        font-size: 12px;
+    }
+
+    .graphic-card {
+        min-height: 180px;
+        padding: 12px;
+    }
+
+    .media-element {
+        max-height: 55vh;
+    }
+
+    .lightbox-footer {
+        padding: 8px 12px;
+        font-size: 10px;
+    }
+
+    /* Mobile Security Login Card */
+    .modal-card {
+        width: calc(100% - 32px);
+        max-width: 360px;
+        padding: 24px 18px;
+        border-radius: 16px;
+    }
+
+    .modal-header h2 {
+        font-size: 18px;
+    }
+
+    .pin-field {
+        width: 90%;
+        font-size: 24px;
+        letter-spacing: 8px;
+        padding: 8px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        width: 92%;
+    }
+
+    /* Mobile Upload Toast */
+    .upload-toast {
+        bottom: 16px;
+        right: 12px;
+        left: 12px;
+        max-width: none;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   3. EXTRA SMALL PHONES & NARROW SCREENS (<= 380px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 380px) {
+    .logo-title {
+        font-size: 15px;
+    }
+
+    .btn-action-primary,
+    .btn-action-outline {
+        font-size: 11px;
+        padding: 6px 8px;
+    }
+
+    .lightbox-title {
+        max-width: 90px;
+    }
+
+    .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .item-card {
+        padding: 8px;
+    }
+
+    .thumb-wrapper {
+        height: 84px;
+    }
+
+    .btn-download {
+        font-size: 10px;
+        padding: 5px 6px;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   4. MOBILE LANDSCAPE ORIENTATION (orientation: landscape & max-height: 520px)
+   Optimizes vertical viewport usage, prevents lightbox/modals from vertical clipping.
+   -------------------------------------------------------------------------- */
+@media (orientation: landscape) and (max-height: 520px) {
+    /* Compact Navbar in Landscape */
+    .navbar {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 16px;
+        gap: 12px;
+    }
+
+    .navbar-top-row {
+        display: contents;
+    }
+
+    .navbar-left {
+        gap: 8px;
+    }
+
+    .logo-icon {
+        font-size: 18px;
+    }
+
+    .logo-title {
+        font-size: 15px;
+    }
+
+    .search-box-wrapper {
+        display: block;
+        flex: 1;
+        max-width: 220px;
+        margin-top: 0;
+    }
+
+    .search-input {
+        padding: 5px 12px;
+        font-size: 12px;
+    }
+
+    .storage-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 100px;
+        max-width: 130px;
+        margin-top: 0;
+    }
+
+    .storage-info {
+        font-size: 9px;
+    }
+
+    .progress-bar-bg {
+        height: 3px;
+    }
+
+    .btn-action-primary,
+    .btn-action-outline {
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+
+    /* Container in Landscape */
+    .container {
+        padding: 10px 16px;
+    }
+
+    .breadcrumbs-card {
+        flex-direction: row;
+        align-items: center;
+        padding: 8px 14px;
+        margin-bottom: 12px;
+    }
+
+    /* Grid in Landscape: 3 to 4 dense columns */
+    .grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 10px;
+    }
+
+    .thumb-wrapper {
+        height: 80px;
+        margin-bottom: 6px;
+    }
+
+    .item-card {
+        padding: 8px;
+    }
+
+    /* Landscape Lightbox: maximizes media viewport height */
+    .lightbox-container {
+        width: 95vw;
+        max-height: 94vh;
+        border-radius: 12px;
+    }
+
+    .lightbox-header {
+        padding: 8px 16px;
+    }
+
+    .lightbox-content {
+        max-height: calc(94vh - 85px);
+        overflow-y: auto;
+    }
+
+    .media-viewport {
+        max-height: calc(94vh - 100px);
+    }
+
+    .media-element {
+        max-height: calc(94vh - 105px);
+    }
+
+    .lightbox-footer {
+        display: none; /* Hide cosmetic footer in landscape to preserve vertical screen space */
+    }
+
+    /* Batch Bar in Landscape */
+    .batch-bar {
+        bottom: 8px;
+        padding: 8px 16px;
+    }
+
+    /* Modal Card in Landscape */
+    .modal-card {
+        padding: 16px 20px;
+        max-height: 92vh;
+        overflow-y: auto;
+    }
+
+    .modal-header h2 {
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+
+    .modal-header p {
+        font-size: 12px;
+        margin-bottom: 10px;
+    }
+
+    .divider-text {
+        margin: 8px 0;
+    }
+
+    .pin-field {
+        font-size: 20px;
+        padding: 6px;
+        margin-bottom: 8px;
+    }
+}
+
+/* ==========================================================================
+   🌐 RTL (Right-to-Left) ARABIC LOCALIZATION SUPPORT
+   ========================================================================== */
+[dir="rtl"] {
+    text-align: right;
+}
+
+[dir="rtl"] .navbar-right {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+[dir="rtl"] .card-checkbox {
+    left: auto;
+    right: 8px;
+}
+
+[dir="rtl"] .btn-nav-back {
+    transform: rotate(180deg);
+}
+
+[dir="rtl"] .btn-nav-back:hover {
+    transform: rotate(180deg) translateX(-2px);
+}
+
+[dir="rtl"] .crumb-separator {
+    transform: rotate(180deg);
+}
+
+[dir="rtl"] .confirm-warning-box {
+    text-align: right;
+}
+
+[dir="rtl"] .metadata-panel {
+    text-align: right;
+}
+
+

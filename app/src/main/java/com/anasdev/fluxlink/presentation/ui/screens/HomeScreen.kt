@@ -136,7 +136,7 @@ fun HomeScreen(
     val shareTextFormat = stringResource(id = R.string.share_text_format)
     val shareChooserTitle = stringResource(id = R.string.share_chooser_title)
 
-    val isServerRunning = uiState.serverStatus == ServerStatus.RUNNING
+    val isServerRunning = uiState.serverStatus == ServerStatus.RUNNING || uiState.serverStatus == ServerStatus.RECONNECTING
     val isNetworkAvailable = uiState.networkState.isConnected && (uiState.networkState.selectedIpAddress != null)
 
     // Auto-refresh network interfaces & connection mode state whenever returning from System Settings
@@ -649,7 +649,11 @@ private fun MorphingGlassmorphicControlBar(
                 )
             }
 
-            // Center: Telemetry (Pulsing Dot + Active + Uptime)
+            // Center: Telemetry (Pulsing Dot + Active/Reconnecting + Uptime)
+            val isReconnecting = uiState.serverStatus == ServerStatus.RECONNECTING
+            val statusColor = if (isReconnecting) Color(0xFFF59E0B) else Color(0xFF10B981)
+            val statusTextRes = if (isReconnecting) R.string.reconnecting_status else R.string.online_status
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
@@ -657,13 +661,13 @@ private fun MorphingGlassmorphicControlBar(
                     .weight(1f)
                     .padding(horizontal = 8.dp)
             ) {
-                PulsingStatusDot()
+                PulsingStatusDot(color = statusColor)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = stringResource(id = R.string.online_status),
+                    text = stringResource(id = statusTextRes),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF10B981)
+                    color = statusColor
                 )
                 Text(
                     text = " • ",

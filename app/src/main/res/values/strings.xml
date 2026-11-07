@@ -59,6 +59,7 @@
     <string name="connect_network_subtitle">Connect to Wi-Fi or turn on Mobile Hotspot to start sharing</string>
     <string name="tap_to_launch_server">Tap the button to launch your local HTTP server</string>
     <string name="online_status">Online</string>
+    <string name="reconnecting_status">Reconnecting…</string>
 
     <!-- Settings Sections & Controls -->
     <string name="settings_title">Settings</string>

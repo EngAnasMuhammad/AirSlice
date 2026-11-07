@@ -1,8 +1,8 @@
-# ⚡ AirSlice v1.1.2 — High-Performance Android Local Web Server & HTTP 206 Media Streamer
+# ⚡ AirSlice v1.2.0 — High-Performance Android Local Web Server & HTTP 206 Media Streamer
 
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0%2B-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
-![Release](https://img.shields.io/badge/Release-v1.1.2-10B981?style=for-the-badge)
+![Release](https://img.shields.io/badge/Release-v1.2.0-10B981?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Android-API%2026%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![APK Size](https://img.shields.io/badge/APK%20Size-3.5%20MB-00C853?style=for-the-badge)
 
@@ -10,7 +10,18 @@
 
 ---
 
-## 🌟 What's New in Release v1.1.2
+## 🌟 What's New in Release v1.2.0
+
+- **🔄 Resilient Network Reconnection & Exponential Backoff:** Replaced immediate server shutdown on Wi-Fi/Hotspot transitions with an intelligent **exponential backoff retry cycle (2s → 4s → 8s → 16s → Graceful Stop)**. Server sockets and active authentication tokens remain preserved during transient network handovers, accompanied by a pulsing reconnecting status badge and countdown timer in the app.
+- **🌐 End-to-End Bilingual Web Interface (Arabic & English with RTL):** The embedded web client now automatically syncs with the Android app's active language setting. Features a complete zero-dependency i18n dictionary for all UI buttons, modals, relative timestamps, and metadata attributes, alongside seamless CSS `[dir="rtl"]` bi-directional layout adaptation.
+- **📦 Accidental Download Prevention & Safe Folder Archives:** Replaced ambiguous `ZIP` button labels with an explicit **Download Folder** prompt. Initiating folder or batch downloads now opens an interactive confirmation dialog with data-size warnings to prevent accidental large downloads on mobile.
+- **📱 Native Mobile Browser History Navigation:** Integrated HTML5 History API (`pushState` / `popstate`). Pressing the Android hardware or gesture Back button now smoothly navigates up the directory hierarchy and dismisses open modal dialogs (lightbox/confirmation) instead of exiting the browser.
+- **🖼️ Smooth Image Carousel & Mobile Lightbox Viewport:** Fixed photo carousel navigation and media player state isolation. Re-engineered the mobile file preview dialog to prevent viewport clipping and overflow in portrait mode.
+- **📐 Adaptive Multi-Tier Topbar:** Reconfigured the web navbar into an adaptive multi-tier layout on mobile, keeping brand status, upload actions, folder download controls, live search, and flash storage meters perfectly aligned.
+
+---
+
+## 🌟 Previous Highlights (Release v1.1.2)
 
 - **📷 Standards-Compliant ISO/IEC 18004 QR Code Generation:** Replaced mock/hash matrix rendering with a real, standards-compliant pure-math ZXing QR encoder (`com.google.zxing:core:3.5.3`). Supports instant phone camera recognition with proper hollow-ring finder patterns (`7x7` outer ring, `5x5` white ring, `3x3` inner square) and seamless one-scan browser auto-authentication.
 - **🔔 Foreground Service Notification Reliability:** Ensured foreground service notification channel initialization and active URL updates execute properly with zero permission or notification delivery bottlenecks.

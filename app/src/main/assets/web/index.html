@@ -2,48 +2,56 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>AirSlice Mobile Cloud Storage</title>
-    <link rel="stylesheet" href="/style.css?v=900">
+    <link rel="stylesheet" href="/style.css?v=960">
 </head>
 <body>
     <!-- Sticky Glassmorphism Top Navbar (Linear / Vercel Dark Style) -->
     <header class="navbar">
-        <div class="navbar-left">
-            <div class="brand">
-                <span class="logo-icon">⚡</span>
-                <span class="logo-title">AirSlice Cloud</span>
+        <div class="navbar-top-row">
+            <div class="navbar-left">
+                <div class="brand">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-title">AirSlice Cloud</span>
+                </div>
+                <!-- Dynamic Connection Mode Badge -->
+                <span class="connection-badge connection-wifi" id="conn-badge">📶 Checking...</span>
             </div>
-            <!-- Dynamic Connection Mode Badge -->
-            <span class="connection-badge connection-wifi" id="conn-badge">📶 Checking...</span>
+
+            <div class="navbar-right">
+                <button id="btn-upload-file" class="btn-action-primary">📤 Upload</button>
+                <input type="file" id="file-picker" multiple style="display: none;">
+            </div>
         </div>
 
-        <!-- Center Quick Search Bar -->
-        <div class="search-box-wrapper">
-            <input type="text" id="search-input" class="search-input" placeholder="🔍 Filter files in current folder..." autocomplete="off">
+        <!-- Center Row: Quick Search Bar + Download Folder Button -->
+        <div class="navbar-action-row">
+            <button id="btn-zip-current" class="btn-action-outline" title="Download current folder as a compressed ZIP file">📦 Download Folder</button>
+            <div class="search-box-wrapper">
+                <input type="text" id="search-input" class="search-input" placeholder="🔍 Filter files in current folder..." autocomplete="off">
+            </div>
         </div>
 
-        <!-- Live Storage Capacity Indicator & Toolbar Actions -->
-        <div class="navbar-right">
-            <div class="storage-container">
-                <div class="storage-info">
-                    <span id="storage-text">Loading Storage...</span>
-                </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" id="storage-bar" style="width: 0%;"></div>
-                </div>
+        <!-- Live Storage Capacity Indicator -->
+        <div class="storage-container">
+            <div class="storage-info">
+                <span id="storage-text">Loading Storage...</span>
             </div>
-            <button id="btn-upload-file" class="btn-action-primary">📤 Upload Files</button>
-            <button id="btn-zip-current" class="btn-action-outline">📦 Download ZIP</button>
-            <input type="file" id="file-picker" multiple style="display: none;">
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="storage-bar" style="width: 0%;"></div>
+            </div>
         </div>
     </header>
 
     <main class="container" id="main-container">
         <!-- Interactive Breadcrumbs Bar & Selection Controls -->
         <nav class="breadcrumbs-card" id="breadcrumbs-nav">
-            <div class="breadcrumbs-list" id="breadcrumbs">
-                <span class="crumb active">Storage Home</span>
+            <div class="breadcrumbs-left-group">
+                <button id="btn-nav-back" class="btn-nav-back hidden" title="Back to Previous Folder">←</button>
+                <div class="breadcrumbs-list" id="breadcrumbs">
+                    <span class="crumb active">Storage Home</span>
+                </div>
             </div>
             <div class="nav-toolbar-right">
                 <!-- Minimalist Sort Controls Group -->
@@ -124,27 +132,27 @@
 
                     <!-- Left Column: File Metadata & Action Panel -->
                     <div class="metadata-panel">
-                        <h3 class="meta-heading">File Metadata & Info</h3>
+                        <h3 class="meta-heading" id="lb-meta-heading">File Metadata & Info</h3>
 
                         <div class="meta-list">
                             <div class="meta-row">
-                                <span class="meta-label">File Name:</span>
+                                <span class="meta-label" id="lb-lbl-name">File Name:</span>
                                 <span class="meta-val meta-val-highlight" id="lb-meta-name">file.ext</span>
                             </div>
                             <div class="meta-row">
-                                <span class="meta-label">Exact Size:</span>
+                                <span class="meta-label" id="lb-lbl-size">Exact Size:</span>
                                 <span class="meta-val" id="lb-meta-size">0 MB (0 bytes)</span>
                             </div>
                             <div class="meta-row">
-                                <span class="meta-label">MIME Type:</span>
+                                <span class="meta-label" id="lb-lbl-type">MIME Type:</span>
                                 <span class="meta-val" id="lb-meta-type">application/octet-stream</span>
                             </div>
                             <div class="meta-row">
-                                <span class="meta-label">Last Modified:</span>
+                                <span class="meta-label" id="lb-lbl-date">Last Modified:</span>
                                 <span class="meta-val" id="lb-meta-date">YYYY-MM-DD HH:mm</span>
                             </div>
                             <div class="meta-row">
-                                <span class="meta-label">Storage Path:</span>
+                                <span class="meta-label" id="lb-lbl-path">Storage Path:</span>
                                 <span class="meta-val meta-val-path" id="lb-meta-path">/storage/emulated/0/...</span>
                             </div>
                         </div>
@@ -239,6 +247,22 @@
         </div>
     </div>
 
-    <script src="/app.js?v=900"></script>
+    <!-- Confirmation Modal for Folder Download (Prevent Accidental Large Downloads) -->
+    <div class="modal-overlay hidden" id="confirm-zip-modal">
+        <div class="modal-card confirm-modal-card">
+            <div class="modal-header">
+                <h2 id="confirm-zip-title">📦 Download Folder as ZIP?</h2>
+                <div id="confirm-zip-desc" class="confirm-desc-content">
+                    <p>Are you sure you want to download this folder? All files will be compressed into a ZIP archive.</p>
+                </div>
+            </div>
+            <div class="confirm-modal-actions">
+                <button id="btn-confirm-zip-cancel" class="btn-secondary">Cancel</button>
+                <button id="btn-confirm-zip-proceed" class="btn-primary">Download ZIP</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js?v=960"></script>
 </body>
 </html>

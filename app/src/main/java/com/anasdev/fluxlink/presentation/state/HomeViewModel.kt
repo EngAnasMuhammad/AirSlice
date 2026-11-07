@@ -103,7 +103,7 @@ class HomeViewModel @Inject constructor(
             clientsWithTickerFlow
         ) { networkState, serverStatus, activePort, pendingRequest, connectedClients ->
 
-            val isRunning = serverStatus == ServerStatus.RUNNING
+            val isRunning = serverStatus == ServerStatus.RUNNING || serverStatus == ServerStatus.RECONNECTING
             val pin = if (isRunning) serverRepository.currentPin else ""
             val token = if (isRunning) serverRepository.sessionToken else ""
             val ip = networkState.selectedIpAddress

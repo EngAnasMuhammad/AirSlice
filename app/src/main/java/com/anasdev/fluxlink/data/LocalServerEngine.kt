@@ -31,6 +31,9 @@ import java.util.Collections
 import java.util.zip.GZIPOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.anasdev.fluxlink.domain.model.AppLanguage
+import com.anasdev.fluxlink.domain.repository.SettingsRepository
+import kotlinx.coroutines.flow.first
 
 @Singleton
 class LocalServerEngine @Inject constructor(
@@ -44,7 +47,8 @@ class LocalServerEngine @Inject constructor(
     private val connectedSessionManager: ConnectedSessionManager,
     private val serverDispatchers: ServerDispatchers,
     private val directBufferPool: DirectBufferPool,
-    private val fileAccessTracker: FileAccessTracker
+    private val fileAccessTracker: FileAccessTracker,
+    private val settingsRepository: SettingsRepository
 ) {
 
     private var serverSocket: ServerSocket? = null
@@ -56,6 +60,14 @@ class LocalServerEngine @Inject constructor(
 
     private val _activePort = MutableStateFlow<Int?>(null)
     val activePort: StateFlow<Int?> = _activePort.asStateFlow()
+
+    fun setReconnectingStatus(isReconnecting: Boolean) {
+        if (isReconnecting && _serverStatus.value == ServerStatus.RUNNING) {
+            _serverStatus.value = ServerStatus.RECONNECTING
+        } else if (!isReconnecting && _serverStatus.value == ServerStatus.RECONNECTING) {
+            _serverStatus.value = ServerStatus.RUNNING
+        }
+    }
 
     private val activeConnections: MutableSet<Closeable> =
         Collections.synchronizedSet(HashSet())
@@ -99,7 +111,7 @@ class LocalServerEngine @Inject constructor(
     }
 
     private fun listenForClients(socket: ServerSocket) {
-        while (_serverStatus.value == ServerStatus.RUNNING && !socket.isClosed) {
+        while ((_serverStatus.value == ServerStatus.RUNNING || _serverStatus.value == ServerStatus.RECONNECTING) && !socket.isClosed) {
             try {
                 val clientSocket = socket.accept()
 
@@ -212,13 +224,25 @@ class LocalServerEngine @Inject constructor(
                     return
                 }
 
-                // Public Server Info Endpoint (Active Connection Mode, Device Model & PIN Auth Requirement)
+                // Public Server Info Endpoint (Active Connection Mode, Device Model, PIN Auth & Active App Language)
                 "/api/server-info" -> {
                     val netState = networkInfoProvider.getNetworkState()
                     val modeName = netState.connectionMode.name
                     val modelName = android.os.Build.MODEL
                     val reqPin = securityManager.requirePinAuth
-                    val json = "{\"connectionMode\":\"$modeName\",\"deviceName\":\"$modelName\",\"requirePin\":$reqPin,\"authenticated\":true}"
+
+                    val configuredLang = runCatching { settingsRepository.getAppLanguage().first() }.getOrDefault(AppLanguage.SYSTEM)
+                    val langTag = when (configuredLang) {
+                        AppLanguage.ENGLISH -> "en"
+                        AppLanguage.ARABIC -> "ar"
+                        AppLanguage.SYSTEM -> {
+                            val sysLang = java.util.Locale.getDefault().language.lowercase(java.util.Locale.ROOT)
+                            if (sysLang == "ar") "ar" else "en"
+                        }
+                    }
+                    val isRtl = (langTag == "ar")
+
+                    val json = "{\"connectionMode\":\"$modeName\",\"deviceName\":\"$modelName\",\"requirePin\":$reqPin,\"authenticated\":true,\"language\":\"$langTag\",\"isRtl\":$isRtl}"
                     sendJsonResponse(outputStream, json, acceptEncoding = acceptEncoding)
                     return
                 }

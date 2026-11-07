@@ -58,6 +58,7 @@
     <string name="connect_network_subtitle">اتصل بشبكة Wi-Fi أو قم بتشغيل نقطة الاتصال المحمولة لبدء المشاركة</string>
     <string name="tap_to_launch_server">اضغط على الزر لتشغيل خادم HTTP المحلي</string>
     <string name="online_status">نشط</string>
+    <string name="reconnecting_status">جارٍ إعادة الاتصال…</string>
 
     <!-- Settings Sections & Controls -->
     <string name="settings_title">الإعدادات</string>
