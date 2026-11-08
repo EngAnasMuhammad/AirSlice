@@ -69,8 +69,6 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private var serverStartTimeMillis: Long = 0L
-
     private val tickerFlow = flow {
         while (true) {
             emit(System.currentTimeMillis())
@@ -109,17 +107,14 @@ class HomeViewModel @Inject constructor(
             val ip = networkState.selectedIpAddress
             val port = activePort ?: networkState.selectedPort
 
-            val uptimeStr = if (isRunning) {
-                if (serverStartTimeMillis == 0L) {
-                    serverStartTimeMillis = System.currentTimeMillis()
-                }
+            val startTime = serverRepository.serverStartTimeMillis
+            val uptimeStr = if (isRunning && startTime > 0L) {
                 val elapsedSec =
-                    0L.coerceAtLeast((System.currentTimeMillis() - serverStartTimeMillis) / 1000)
+                    0L.coerceAtLeast((System.currentTimeMillis() - startTime) / 1000)
                 val mins = elapsedSec / 60
                 val secs = elapsedSec % 60
                 String.format(Locale.US, "%02d:%02d", mins, secs)
             } else {
-                serverStartTimeMillis = 0L
                 "00:00"
             }
 

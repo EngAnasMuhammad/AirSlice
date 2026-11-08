@@ -1,8 +1,8 @@
-# ⚡ AirSlice v1.2.0 — High-Performance Android Local Web Server & HTTP 206 Media Streamer
+# ⚡ AirSlice v1.2.1 — High-Performance Android Local Web Server & HTTP 206 Media Streamer
 
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0%2B-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
-![Release](https://img.shields.io/badge/Release-v1.2.0-10B981?style=for-the-badge)
+![Release](https://img.shields.io/badge/Release-v1.2.1-10B981?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Android-API%2026%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![APK Size](https://img.shields.io/badge/APK%20Size-3.5%20MB-00C853?style=for-the-badge)
 
@@ -10,7 +10,17 @@
 
 ---
 
-## 🌟 What's New in Release v1.2.0
+## 🌟 What's New in Release v1.2.1
+
+- **🛡️ Server Exit Confirmation & Lifecycle Guard:** Pressing the Android Back button on the home screen while the server is actively running now displays an interactive confirmation dialog with two explicit choices: **Keep Running in Background** or **Stop Server & Exit**.
+- **🧹 Task Removal & Foreground Service Cleanup:** Integrated `onTaskRemoved` lifecycle handling in `ServerForegroundService` to safely tear down the active server engine, release hardware wake locks, and remove foreground notifications when the user swipes the app away from recent tasks.
+- **📐 Adaptive Dialog Vertical Centering (Landscape & Portrait):** Re-engineered both `ServerExitConfirmDialog` and `ServerInspectorDialog` with `IntrinsicSize.Min`, `fillMaxHeight()`, and calibrated optical centering offsets in Landscape mode, ensuring title, icons, status badges, and action buttons remain balanced on all screen aspect ratios.
+- **🌐 Web Client Login Window Localization:** Eliminated hardcoded strings in the browser authentication modal, aligning all login dialog labels, placeholders, and error messages with the active bilingual (English/Arabic RTL) translation system.
+- **⚡ Local Server Engine IO & Math Optimizations:** Offloaded raw response header writing to `Dispatchers.IO`, modernized boundary clamping with Kotlin `.coerceAtMost()`, and refined exception filtering for cleaner server diagnostics.
+
+---
+
+## 🌟 Previous Highlights (Release v1.2.0)
 
 - **🔄 Resilient Network Reconnection & Exponential Backoff:** Replaced immediate server shutdown on Wi-Fi/Hotspot transitions with an intelligent **exponential backoff retry cycle (2s → 4s → 8s → 16s → Graceful Stop)**. Server sockets and active authentication tokens remain preserved during transient network handovers, accompanied by a pulsing reconnecting status badge and countdown timer in the app.
 - **🌐 End-to-End Bilingual Web Interface (Arabic & English with RTL):** The embedded web client now automatically syncs with the Android app's active language setting. Features a complete zero-dependency i18n dictionary for all UI buttons, modals, relative timestamps, and metadata attributes, alongside seamless CSS `[dir="rtl"]` bi-directional layout adaptation.
@@ -107,7 +117,8 @@ com.anasdev.fluxlink
 │   ├── ui/screens/HomeScreen.kt      # Morphing Power Control, Adaptive Layout, Connected Devices
 │   └── ui/screens/SettingsScreen.kt  # Material 3 Categorized Settings & About Section
 └── assets/web                        # Offline Single-Page Web Application (HTML5 / CSS3 / ES6 Vanilla JS)
-👤 Developer & Maintainer
+
+## 👤 Developer & Maintainer
 Developer: Anas Muhammad
 
 GitHub Repository: EngAnasMuhammad/AirSlice

@@ -24,6 +24,9 @@ class ServerRepositoryImpl @Inject constructor(
     override val activePort: StateFlow<Int?>
         get() = localServerEngine.activePort
 
+    override val serverStartTimeMillis: Long
+        get() = localServerEngine.serverStartTimeMillis
+
     override val currentPin: String
         get() = securityManager.currentPin
 

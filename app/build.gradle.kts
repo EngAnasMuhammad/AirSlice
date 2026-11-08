@@ -1,3 +1,6 @@
+import java.io.File
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -13,8 +16,8 @@ android {
         applicationId = "com.anasdev.fluxlink"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "1.2.0"
+        versionCode = 6
+        versionName = "1.2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -27,15 +30,47 @@ android {
         buildConfigField("int", "NOTIFICATION_ID", "1001")
     }
 
+    val keystorePropertiesFile = rootProject.file("keystore.properties").takeIf { it.exists() }
+        ?: project.file("keystore.properties").takeIf { it.exists() }
+    val keystoreProperties = Properties().apply {
+        if (keystorePropertiesFile != null) {
+            load(keystorePropertiesFile.inputStream())
+        }
+    }
+
+    fun resolveKeystoreFile(): File? {
+        val envPath = System.getenv("KEYSTORE_FILE")
+        if (!envPath.isNullOrEmpty()) {
+            val f = file(envPath)
+            if (f.exists()) return f
+        }
+        val propPath = keystoreProperties.getProperty("storeFile")
+        if (!propPath.isNullOrEmpty()) {
+            val f = file(propPath)
+            if (f.exists()) return f
+            val rf = rootProject.file(propPath)
+            if (rf.exists()) return rf
+        }
+        val defaultFile = file("release.keystore")
+        return if (defaultFile.exists()) defaultFile else null
+    }
+
     signingConfigs {
         create("release") {
-            val keystorePath = System.getenv("KEYSTORE_FILE") ?: "release.keystore"
-            val keystoreFile = file(keystorePath)
-            if (keystoreFile.exists()) {
+            val keystoreFile = resolveKeystoreFile()
+            if (keystoreFile != null) {
                 storeFile = keystoreFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: ""
-                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                    ?: keystoreProperties.getProperty("storePassword")
+                    ?: ""
+                keyAlias = System.getenv("KEY_ALIAS")
+                    ?: keystoreProperties.getProperty("keyAlias")
+                    ?: ""
+                keyPassword = System.getenv("KEY_PASSWORD")
+                    ?: keystoreProperties.getProperty("keyPassword")
+                    ?: ""
+                enableV1Signing = true
+                enableV2Signing = true
             }
         }
     }
@@ -49,9 +84,8 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            val keystorePath = System.getenv("KEYSTORE_FILE") ?: "release.keystore"
-            val keystoreFile = file(keystorePath)
-            signingConfig = if (keystoreFile.exists()) {
+            val keystoreFile = resolveKeystoreFile()
+            signingConfig = if (keystoreFile != null) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")

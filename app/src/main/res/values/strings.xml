@@ -16,12 +16,19 @@
     <string name="network_server_status_title">Network &amp; Server Status</string>
     <string name="active_interface_endpoint_label">Active Interface &amp; Endpoint</string>
     <string name="offline">Offline</string>
-    <string name="expected_throughput_label">Expected Throughput Profile</string>
-    <string name="throughput_hotspot_turbo">⚡ Exceeding 22+ MB/s (Direct 1-hop zero-copy link)</string>
-    <string name="throughput_wifi_router">📶 ~2–5 MB/s (Limited by 2-hop router relay)</string>
-    <string name="throughput_offline">⚠️ Offline</string>
-    <string name="guidance_wifi_tip">💡 Tip: For 5x faster speeds (exceeding 22+ MB/s) without using mobile data, enable your phone\'s 5GHz Mobile Hotspot.</string>
+    <string name="connection_topology_label">Connection Topology</string>
+    <string name="topology_hotspot_title">⚡ Direct Peer-to-Peer</string>
+    <string name="topology_hotspot_route">1-Hop direct link • Lowest latency</string>
+    <string name="topology_wifi_title">📶 Local LAN Relay</string>
+    <string name="topology_wifi_route">2-Hop link via router • Shared bandwidth</string>
+    <string name="topology_offline_title">⚠️ Disconnected</string>
+    <string name="topology_offline_route">No network interface active</string>
+    <string name="guidance_wifi_tip">💡 Tip: For direct transfers without router traffic or Wi-Fi contention, switch to your phone\'s 5GHz Mobile Hotspot.</string>
     <string name="close">Close</string>
+    <string name="exit_dialog_title">Server is Running</string>
+    <string name="exit_dialog_message">The local server is currently active. Do you want to keep it running in the background, or stop the server and exit?</string>
+    <string name="run_in_background">Run in Background</string>
+    <string name="stop_and_exit">Stop &amp; Exit</string>
     <string name="open_hotspot_settings">Open Hotspot Settings</string>
     <string name="hotspot_turbo_mode_active">⚡ Hotspot Turbo Mode Active</string>
     <string name="wifi_router_mode">📶 Wi-Fi Router Mode</string>
@@ -101,6 +108,6 @@
     <string name="language_arabic">العربية (Arabic)</string>
     <string name="cancel">Cancel</string>
     <string name="apply">Apply</string>
-    <string name="back">back</string>
+    <string name="back">Back</string>
     <string name="app_features">Fast Direct Wireless Transfer • Offline First</string>
 </resources>

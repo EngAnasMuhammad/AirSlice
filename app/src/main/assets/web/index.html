@@ -216,8 +216,8 @@
     <div class="drag-overlay hidden" id="drag-overlay">
         <div class="drag-modal">
             <span class="drag-icon">📥</span>
-            <h2>Drop files here to upload</h2>
-            <p>Files stream directly into mobile flash storage at maximum Wi-Fi speed</p>
+            <h2 id="drag-overlay-title">Drop files here to upload</h2>
+            <p id="drag-overlay-desc">Files stream directly into mobile flash storage at maximum Wi-Fi speed</p>
         </div>
     </div>
 
@@ -225,8 +225,8 @@
     <div class="modal-overlay hidden" id="login-modal">
         <div class="modal-card">
             <div class="modal-header">
-                <h2>🔐 AirSlice Security Pairing</h2>
-                <p>Request 1-Tap approval on phone OR enter the 4-digit PIN code displayed on screen.</p>
+                <h2 id="login-modal-title">🔐 AirSlice Security Pairing</h2>
+                <p id="login-modal-subtitle">Request 1-Tap approval on phone OR enter the 4-digit PIN code displayed on screen.</p>
             </div>
             <div class="modal-body">
                 <!-- 1-Tap Quick Approval Section -->
@@ -237,7 +237,7 @@
                     Waiting for approval on phone... ⏳
                 </div>
 
-                <div class="divider-text">── OR ENTER PIN CODE ──</div>
+                <div id="login-divider-text" class="divider-text">── OR ENTER PIN CODE ──</div>
 
                 <!-- PIN Code Fallback Section -->
                 <input type="text" id="pin-input" class="pin-field" maxlength="4" placeholder="••••" pattern="[0-9]*" inputmode="numeric">

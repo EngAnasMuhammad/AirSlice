@@ -53,10 +53,13 @@
             waitingApproval: 'Waiting for 1-Tap approval on phone... ⏳',
             approved: 'Connection Approved! ✨',
             declined: 'Connection declined on phone ❌',
+            requestFailed: 'Request failed ❌',
+            pinDivider: '── OR ENTER PIN CODE ──',
             submitPin: 'Submit PIN',
             enter4DigitPin: 'Please enter a 4-digit PIN code.',
             invalidPin: 'Invalid 4-digit PIN code.',
             authenticating: 'Authenticating...',
+            connectionError: (msg) => msg ? `Connection error: ${msg}` : 'Connection error',
             openTab: '↗ Open Tab',
             filePreview: 'File Preview',
             downloadBtnText: '📥 Download',
@@ -128,10 +131,13 @@
             waitingApproval: 'في انتظار الموافقة من الهاتف... ⏳',
             approved: 'تمت الموافقة على الاتصال! ✨',
             declined: 'تم رفض الاتصال من الهاتف ❌',
+            requestFailed: 'فشل الطلب ❌',
+            pinDivider: '── أو أدخل رمز PIN ──',
             submitPin: 'تأكيد الرمز',
             enter4DigitPin: 'يرجى إدخال رمز PIN المكون من 4 أرقام.',
             invalidPin: 'رمز PIN غير صحيح.',
             authenticating: 'جارٍ التحقق...',
+            connectionError: (msg) => msg ? `خطأ في الاتصال: ${msg}` : 'خطأ في الاتصال',
             openTab: '↗ فتح في نافذة',
             filePreview: 'معاينة الملف',
             downloadBtnText: '📥 تنزيل',
@@ -236,10 +242,28 @@
         if (lbLblPath) lbLblPath.innerText = t.metaPath;
         if (lbBtnDownload) lbBtnDownload.innerText = t.downloadBtnText;
 
+        // Translate login modal elements
+        const loginModalTitle = document.getElementById('login-modal-title');
+        const loginModalSubtitle = document.getElementById('login-modal-subtitle');
+        const loginDividerText = document.getElementById('login-divider-text');
         const btnRequestApproval = document.getElementById('btn-request-approval');
+        const approvalStatusText = document.getElementById('approval-status-text');
         const btnLogin = document.getElementById('btn-login');
+
+        if (loginModalTitle) loginModalTitle.innerText = t.pinTitle;
+        if (loginModalSubtitle) loginModalSubtitle.innerText = t.pinSubtitle;
+        if (loginDividerText) loginDividerText.innerText = t.pinDivider;
         if (btnRequestApproval && !btnRequestApproval.disabled) btnRequestApproval.innerText = t.requestApproval;
+        if (approvalStatusText && approvalStatusText.classList.contains('hidden')) {
+            approvalStatusText.innerText = t.waitingApproval;
+        }
         if (btnLogin) btnLogin.innerText = t.submitPin;
+
+        // Translate drag overlay elements
+        const dragTitle = document.getElementById('drag-overlay-title');
+        const dragDesc = document.getElementById('drag-overlay-desc');
+        if (dragTitle) dragTitle.innerText = t.dropOverlayTitle;
+        if (dragDesc) dragDesc.innerText = t.dropOverlaySubtitle;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -666,13 +690,13 @@
                 if (data.success && data.requestId) {
                     pollApprovalStatus(data.requestId);
                 } else {
-                    resetApprovalButton(t.uploadFailed);
+                    resetApprovalButton(t.requestFailed);
                 }
             } else {
-                resetApprovalButton(t.uploadFailed);
+                resetApprovalButton(t.requestFailed);
             }
         } catch (err) {
-            resetApprovalButton('Connection error: ' + err.message);
+            resetApprovalButton(t.connectionError(err.message));
         }
     }
 
@@ -704,7 +728,7 @@
                     } else if (data.status === 'DENIED') {
                         clearInterval(pollingTimer);
                         pollingTimer = null;
-                        resetApprovalButton('Connection declined on phone ❌');
+                        resetApprovalButton(t.declined);
                     }
                 }
             } catch (err) {
@@ -719,7 +743,7 @@
 
         if (btn) {
             btn.disabled = false;
-            btn.innerText = '📱 Request 1-Tap Approval on Phone';
+            btn.innerText = t.requestApproval;
         }
 
         if (statusText && message) {
@@ -1533,12 +1557,12 @@
                 await loadStorageStats();
                 await loadFolder(currentPath);
             } else {
-                loginError.innerText = data.error || 'Invalid 4-digit PIN code.';
+                loginError.innerText = t.invalidPin;
                 pinInput.value = '';
                 pinInput.focus();
             }
         } catch (err) {
-            loginError.innerText = 'Connection error: ' + err.message;
+            loginError.innerText = t.connectionError(err.message);
         }
     }
 

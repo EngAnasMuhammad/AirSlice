@@ -1,14 +1,17 @@
 package com.anasdev.fluxlink.presentation.ui.screens
 
 import android.Manifest
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -31,6 +34,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -125,6 +129,7 @@ fun HomeScreen(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     var showInspectorDialog by remember { mutableStateOf(false) }
+    var showExitConfirmDialog by remember { mutableStateOf(false) }
 
     val notificationReqText = stringResource(id = R.string.notification_permission_required)
     val storageReqText = stringResource(id = R.string.storage_permission_required)
@@ -138,6 +143,10 @@ fun HomeScreen(
 
     val isServerRunning = uiState.serverStatus == ServerStatus.RUNNING || uiState.serverStatus == ServerStatus.RECONNECTING
     val isNetworkAvailable = uiState.networkState.isConnected && (uiState.networkState.selectedIpAddress != null)
+
+    BackHandler(enabled = isServerRunning) {
+        showExitConfirmDialog = true
+    }
 
     // Auto-refresh network interfaces & connection mode state whenever returning from System Settings
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -284,6 +293,23 @@ fun HomeScreen(
                 showInspectorDialog = false
                 HotspotHelper.openHotspotSettings(context)
             }
+        )
+    }
+
+    // Exit Confirmation Dialog on Back Gesture while Server is Active
+    if (showExitConfirmDialog) {
+        ServerExitConfirmDialog(
+            isLandscape = isLandscape,
+            onKeepInBackground = {
+                showExitConfirmDialog = false
+                context.findActivity()?.moveTaskToBack(true)
+            },
+            onStopAndExit = {
+                showExitConfirmDialog = false
+                viewModel.stopServer(context)
+                context.findActivity()?.finish()
+            },
+            onDismiss = { showExitConfirmDialog = false }
         )
     }
 
@@ -779,6 +805,179 @@ private fun StoragePermissionBanner(
 }
 
 @Composable
+private fun ServerExitConfirmDialog(
+    isLandscape: Boolean,
+    onKeepInBackground: () -> Unit,
+    onStopAndExit: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier
+            .widthIn(max = if (isLandscape) 840.dp else 420.dp)
+            .fillMaxWidth(if (isLandscape) 0.88f else 0.90f),
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        text = {
+            if (isLandscape) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min)
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(0.85f)
+                            .fillMaxHeight()
+                            .padding(end = 4.dp, top = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_server_notification),
+                                contentDescription = "Server Icon",
+                                modifier = Modifier.size(30.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = stringResource(id = R.string.exit_dialog_title),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1.15f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.exit_dialog_message),
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 18.sp,
+                                modifier = Modifier.padding(14.dp)
+                            )
+                        }
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp, bottom = 2.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_server_notification),
+                            contentDescription = "Server Icon",
+                            modifier = Modifier.size(30.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Text(
+                        text = stringResource(id = R.string.exit_dialog_title),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                        )
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.exit_dialog_message),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = onStopAndExit,
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.stop_and_exit),
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp
+                    )
+                }
+
+                Button(
+                    onClick = onKeepInBackground,
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.run_in_background),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+    )
+}
+
+@Composable
 private fun ServerInspectorDialog(
     uiState: HomeUiState,
     isLandscape: Boolean,
@@ -805,6 +1004,7 @@ private fun ServerInspectorDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .height(IntrinsicSize.Min)
                         .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(20.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -812,45 +1012,46 @@ private fun ServerInspectorDialog(
                     Column(
                         modifier = Modifier
                             .weight(0.85f)
-                            .padding(end = 4.dp),
+                            .fillMaxHeight()
+                            .padding(end = 4.dp, top = 18.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.SpaceBetween
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_server_notification),
-                                    contentDescription = "Inspector Icon",
-                                    modifier = Modifier.size(30.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-
-                            Text(
-                                text = stringResource(id = R.string.network_server_status_title),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                textAlign = TextAlign.Center
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_server_notification),
+                                contentDescription = "Inspector Icon",
+                                modifier = Modifier.size(30.dp),
+                                tint = MaterialTheme.colorScheme.primary
                             )
-
-                            InspectorModeBadge(mode = mode)
                         }
 
-                        GuidanceTip(mode = mode, modifier = Modifier.padding(top = 12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = stringResource(id = R.string.network_server_status_title),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        InspectorModeBadge(mode = mode)
+
+                        GuidanceTip(mode = mode, modifier = Modifier.padding(top = 10.dp))
                     }
 
                     Column(
                         modifier = Modifier
                             .weight(1.15f)
+                            .fillMaxHeight()
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -866,13 +1067,16 @@ private fun ServerInspectorDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(top = 10.dp)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Box(
                         modifier = Modifier
-                            .size(52.dp)
+                            .size(54.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
@@ -880,7 +1084,7 @@ private fun ServerInspectorDialog(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_server_notification),
                             contentDescription = "Inspector Icon",
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(30.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -964,20 +1168,31 @@ private fun InspectorDiagnosticContent(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = stringResource(id = R.string.expected_throughput_label),
+                text = stringResource(id = R.string.connection_topology_label),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = when (mode) {
-                    ConnectionMode.HOTSPOT_DIRECT -> stringResource(id = R.string.throughput_hotspot_turbo)
-                    ConnectionMode.WIFI_ROUTER -> stringResource(id = R.string.throughput_wifi_router)
-                    ConnectionMode.DISCONNECTED -> stringResource(id = R.string.throughput_offline)
+                    ConnectionMode.HOTSPOT_DIRECT -> stringResource(id = R.string.topology_hotspot_title)
+                    ConnectionMode.WIFI_ROUTER -> stringResource(id = R.string.topology_wifi_title)
+                    ConnectionMode.DISCONNECTED -> stringResource(id = R.string.topology_offline_title)
                 },
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = if (mode == ConnectionMode.HOTSPOT_DIRECT) Color(0xFF69F0AE) else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                modifier = Modifier.basicMarquee()
+            )
+            Text(
+                text = when (mode) {
+                    ConnectionMode.HOTSPOT_DIRECT -> stringResource(id = R.string.topology_hotspot_route)
+                    ConnectionMode.WIFI_ROUTER -> stringResource(id = R.string.topology_wifi_route)
+                    ConnectionMode.DISCONNECTED -> stringResource(id = R.string.topology_offline_route)
+                },
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 modifier = Modifier.basicMarquee()
             )
@@ -998,7 +1213,9 @@ private fun GuidanceTip(
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(top = 6.dp, bottom = 2.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
             Text(
                 text = stringResource(id = R.string.guidance_wifi_tip),
@@ -1534,4 +1751,13 @@ private fun ServerRunningConnectionCardLandscape(
             }
         }
     }
+}
+
+private fun Context.findActivity(): Activity? {
+    var currentContext = this
+    while (currentContext is ContextWrapper) {
+        if (currentContext is Activity) return currentContext
+        currentContext = currentContext.baseContext
+    }
+    return null
 }

@@ -61,6 +61,10 @@ class LocalServerEngine @Inject constructor(
     private val _activePort = MutableStateFlow<Int?>(null)
     val activePort: StateFlow<Int?> = _activePort.asStateFlow()
 
+    private var _serverStartTimeMillis: Long = 0L
+    val serverStartTimeMillis: Long
+        get() = _serverStartTimeMillis
+
     fun setReconnectingStatus(isReconnecting: Boolean) {
         if (isReconnecting && _serverStatus.value == ServerStatus.RUNNING) {
             _serverStatus.value = ServerStatus.RECONNECTING
@@ -96,6 +100,7 @@ class LocalServerEngine @Inject constructor(
             // Generate 4-digit PIN & Session Token for Stage 4 pairing
             securityManager.generateNewPairingSession()
 
+            _serverStartTimeMillis = System.currentTimeMillis()
             _serverStatus.value = ServerStatus.RUNNING
 
             serverJob = scope.launch {
@@ -125,12 +130,12 @@ class LocalServerEngine @Inject constructor(
                 scope.launch {
                     try {
                         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_MORE_FAVORABLE)
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         // Ignore process priority permissions if restricted
                     }
                     handleClientRequest(clientSocket)
                 }
-            } catch (e: SocketException) {
+            } catch (_: SocketException) {
                 break
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -307,13 +312,9 @@ class LocalServerEngine @Inject constructor(
             val extractedToken = securityManager.extractSessionTokenFromCookie(cookieHeader ?: "")
             val isPinRequired = securityManager.requirePinAuth
 
-            val isAuthenticated = if (!isPinRequired) {
-                true
-            } else {
-                extractedToken != null &&
-                        securityManager.isCookieAuthenticated(cookieHeader) &&
-                        connectedSessionManager.isSessionValid(extractedToken, clientIp)
-            }
+            val isAuthenticated = !isPinRequired || extractedToken != null &&
+                    securityManager.isCookieAuthenticated(cookieHeader) &&
+                    connectedSessionManager.isSessionValid(extractedToken, clientIp)
 
             if (isAuthenticated) {
                 val activeToken = if (!extractedToken.isNullOrBlank()) extractedToken else securityManager.sessionToken
@@ -533,7 +534,9 @@ class LocalServerEngine @Inject constructor(
 
             """.trimIndent() + "\r\n"
 
-            outputStream.write(headers.toByteArray(Charsets.UTF_8))
+            withContext(Dispatchers.IO) {
+                outputStream.write(headers.toByteArray(Charsets.UTF_8))
+            }
 
             videoStreamDataSource.streamByteRange(file, rangeSpec, outputStream)
         } catch (_: Exception) {
@@ -639,7 +642,7 @@ class LocalServerEngine @Inject constructor(
 
                     while (totalRead < totalBytesToRead) {
                         val remaining = totalBytesToRead - totalRead
-                        val bytesToRead = Math.min(tempArray.size.toLong(), remaining).toInt()
+                        val bytesToRead = tempArray.size.toLong().coerceAtMost(remaining).toInt()
 
                         val read = inputStream.read(tempArray, 0, bytesToRead)
                         if (read == -1) break
@@ -947,6 +950,7 @@ class LocalServerEngine @Inject constructor(
         serverJob?.cancel()
         serverJob = null
 
+        _serverStartTimeMillis = 0L
         _activePort.value = null
         _serverStatus.value = ServerStatus.STOPPED
     }
