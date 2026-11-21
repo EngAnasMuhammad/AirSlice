@@ -10,6 +10,12 @@
 
 ---
 
+# Latest Release APK
+
+[Download APK](https://github.com/EngAnasMuhammad/AirSlice/releases/latest)
+
+---
+
 ## 🌟 What's New in Release v1.2.1
 
 - **🛡️ Server Exit Confirmation & Lifecycle Guard:** Pressing the Android Back button on the home screen while the server is actively running now displays an interactive confirmation dialog with two explicit choices: **Keep Running in Background** or **Stop Server & Exit**.
@@ -117,8 +123,9 @@ com.anasdev.fluxlink
 │   ├── ui/screens/HomeScreen.kt      # Morphing Power Control, Adaptive Layout, Connected Devices
 │   └── ui/screens/SettingsScreen.kt  # Material 3 Categorized Settings & About Section
 └── assets/web                        # Offline Single-Page Web Application (HTML5 / CSS3 / ES6 Vanilla JS)
+```
 
 ## 👤 Developer & Maintainer
 Developer: Anas Muhammad
 
-GitHub Repository: EngAnasMuhammad/AirSlice
+GitHub Repository: [EngAnasMuhammad/AirSlice](https://github.com/EngAnasMuhammad/AirSlice)
