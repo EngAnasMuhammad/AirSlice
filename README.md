@@ -10,6 +10,12 @@
 
 ---
 
+# Latest Release APK
+
+[Download APK](https://github.com/EngAnasMuhammad/AirSlice/releases/latest)
+
+---
+
 ## 🌟 What's New in Release v1.3.0
 
 - **📋 Real-Time Shared Clipboard Manager (Web ↔ Android):**
@@ -138,8 +144,9 @@ com.anasdev.fluxlink
 │   ├── ui/screens/HomeScreen.kt      # Morphing Power Control, Adaptive Layout, Connected Devices, Clipboard Card
 │   └── ui/screens/SettingsScreen.kt  # Material 3 Categorized Settings & About Section
 └── assets/web                        # Offline Single-Page Web Application (HTML5 / CSS3 / ES6 Vanilla JS)
+```
 
 ## 👤 Developer & Maintainer
 Developer: Anas Muhammad
 
-GitHub Repository: EngAnasMuhammad/AirSlice
+GitHub Repository: [EngAnasMuhammad/AirSlice](https://github.com/EngAnasMuhammad/AirSlice)
