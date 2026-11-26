@@ -2,6 +2,7 @@ package com.anasdev.fluxlink.di
 
 import android.content.Context
 import com.anasdev.fluxlink.data.ConnectedSessionManager
+import com.anasdev.fluxlink.data.HotspotClientTracker
 import com.anasdev.fluxlink.data.NetworkInfoProvider
 import com.anasdev.fluxlink.data.PortManager
 import dagger.Module
@@ -23,11 +24,18 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideHotspotClientTracker(): HotspotClientTracker {
+        return HotspotClientTracker()
+    }
+
+    @Provides
+    @Singleton
     fun provideNetworkInfoProvider(
         @ApplicationContext context: Context,
         portManager: PortManager,
-        connectedSessionManager: ConnectedSessionManager
+        connectedSessionManager: ConnectedSessionManager,
+        hotspotClientTracker: HotspotClientTracker
     ): NetworkInfoProvider {
-        return NetworkInfoProvider(context, portManager, connectedSessionManager)
+        return NetworkInfoProvider(context, portManager, connectedSessionManager, hotspotClientTracker)
     }
 }

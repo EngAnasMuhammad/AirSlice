@@ -10,9 +10,14 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anasdev.fluxlink.data.AndroidClipboardBridge
+import com.anasdev.fluxlink.data.ClipboardReadResult
+import com.anasdev.fluxlink.data.ClipboardSessionStore
 import com.anasdev.fluxlink.data.LockManager
 import com.anasdev.fluxlink.data.QrCodeGenerator
 import com.anasdev.fluxlink.data.ThumbnailGenerator
+import com.anasdev.fluxlink.domain.model.ClipboardItem
+import com.anasdev.fluxlink.domain.model.ClipboardMode
 import com.anasdev.fluxlink.domain.model.ConnectedClient
 import com.anasdev.fluxlink.domain.model.NetworkState
 import com.anasdev.fluxlink.domain.model.PendingClientRequest
@@ -24,8 +29,11 @@ import com.anasdev.fluxlink.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
@@ -52,7 +60,10 @@ data class HomeUiState(
     val connectedClients: List<ConnectedClient> = emptyList(),
     val thumbnailCacheSizeBytes: Long = 0L,
     val formattedUptime: String = "00:00",
-    val isPinRequired: Boolean = true
+    val isPinRequired: Boolean = true,
+    val clipboardMode: ClipboardMode = ClipboardMode.OFF,
+    val clipboardItems: List<ClipboardItem> = emptyList(),
+    val pendingSharedText: String? = null
 )
 
 @HiltViewModel
@@ -63,11 +74,16 @@ class HomeViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val lockManager: LockManager,
     private val qrCodeGenerator: QrCodeGenerator,
-    private val thumbnailGenerator: ThumbnailGenerator
+    private val thumbnailGenerator: ThumbnailGenerator,
+    private val clipboardSessionStore: ClipboardSessionStore,
+    private val clipboardBridge: AndroidClipboardBridge
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private val _clipboardActionResult = MutableSharedFlow<ClipboardReadResult>()
+    val clipboardActionResult: SharedFlow<ClipboardReadResult> = _clipboardActionResult.asSharedFlow()
 
     private val tickerFlow = flow {
         while (true) {
@@ -90,6 +106,19 @@ class HomeViewModel @Inject constructor(
         settingsRepository.getRequirePinAuth().onEach { pinRequired ->
             _uiState.value = _uiState.value.copy(
                 isPinRequired = pinRequired
+            )
+        }.launchIn(viewModelScope)
+
+        // Observe Clipboard Session Store (Mode + Items)
+        combine(
+            clipboardSessionStore.mode,
+            clipboardSessionStore.items
+        ) { mode, items ->
+            Pair(mode, items)
+        }.onEach { (mode, items) ->
+            _uiState.value = _uiState.value.copy(
+                clipboardMode = mode,
+                clipboardItems = items
             )
         }.launchIn(viewModelScope)
 
@@ -135,7 +164,7 @@ class HomeViewModel @Inject constructor(
                 qrBitmap?.asImageBitmap()
             }
 
-            HomeUiState(
+            _uiState.value.copy(
                 networkState = networkState,
                 serverStatus = serverStatus,
                 activeServerPort = activePort,
@@ -158,6 +187,70 @@ class HomeViewModel @Inject constructor(
 
         // Initial background cache size calculation
         refreshCacheSize()
+    }
+
+    fun setClipboardMode(mode: ClipboardMode) {
+        clipboardSessionStore.setMode(mode)
+    }
+
+    fun pushPhoneClipboard() {
+        viewModelScope.launch {
+            val result = clipboardBridge.pushCurrentPhoneClipboard()
+            _clipboardActionResult.emit(result)
+        }
+    }
+
+    fun addCustomClipboardText(text: String) {
+        if (text.isNotBlank()) {
+            clipboardSessionStore.addItem(text, ClipboardSessionStore.SOURCE_PHONE)
+        }
+    }
+
+    fun copyItemToSystemClipboard(text: String) {
+        clipboardBridge.copyToSystemClipboard(text)
+    }
+
+    fun removeClipboardItem(id: Long) {
+        clipboardSessionStore.removeItem(id)
+    }
+
+    fun clearClipboardHistory() {
+        clipboardSessionStore.clear()
+    }
+
+    fun handleSharedTextReceived(text: String) {
+        val isRunning = _uiState.value.serverStatus == ServerStatus.RUNNING || _uiState.value.serverStatus == ServerStatus.RECONNECTING
+        if (!isRunning) {
+            _uiState.value = _uiState.value.copy(pendingSharedText = text)
+            viewModelScope.launch {
+                _clipboardActionResult.emit(ClipboardReadResult.Error("SERVER_STOPPED"))
+            }
+            return
+        }
+
+        if (clipboardSessionStore.mode.value == ClipboardMode.TWO_WAY) {
+            clipboardSessionStore.addItem(text, ClipboardSessionStore.SOURCE_PHONE)
+            viewModelScope.launch {
+                _clipboardActionResult.emit(ClipboardReadResult.Success(ClipboardItem(0L, text, ClipboardSessionStore.SOURCE_PHONE, System.currentTimeMillis())))
+            }
+        } else {
+            // Store pending shared text so UI dialog can ask user to enable Two-Way
+            _uiState.value = _uiState.value.copy(pendingSharedText = text)
+        }
+    }
+
+    fun confirmEnableTwoWayAndSendSharedText() {
+        val text = _uiState.value.pendingSharedText ?: return
+        clipboardSessionStore.setMode(ClipboardMode.TWO_WAY)
+        clipboardSessionStore.addItem(text, ClipboardSessionStore.SOURCE_PHONE)
+        _uiState.value = _uiState.value.copy(pendingSharedText = null)
+        viewModelScope.launch {
+            _clipboardActionResult.emit(ClipboardReadResult.Success(ClipboardItem(0L, text, ClipboardSessionStore.SOURCE_PHONE, System.currentTimeMillis())))
+        }
+    }
+
+    fun dismissPendingSharedText() {
+        _uiState.value = _uiState.value.copy(pendingSharedText = null)
     }
 
     fun refreshCacheSize() {

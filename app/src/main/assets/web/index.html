@@ -20,6 +20,7 @@
             </div>
 
             <div class="navbar-right">
+                <button id="btn-clipboard-toggle" class="btn-action-outline btn-nav-clipboard" title="Shared Clipboard">📋 Clipboard</button>
                 <button id="btn-upload-file" class="btn-action-primary">📤 Upload</button>
                 <input type="file" id="file-picker" multiple style="display: none;">
             </div>
@@ -259,6 +260,66 @@
             <div class="confirm-modal-actions">
                 <button id="btn-confirm-zip-cancel" class="btn-secondary">Cancel</button>
                 <button id="btn-confirm-zip-proceed" class="btn-primary">Download ZIP</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sleek Shared Clipboard Modal / Panel -->
+    <div class="modal-overlay hidden" id="clipboard-modal">
+        <div class="modal-card clipboard-modal-card">
+            <!-- Header -->
+            <div class="clipboard-header">
+                <div class="clipboard-title-group">
+                    <span class="clipboard-header-icon">📋</span>
+                    <h2 id="clipboard-title" class="clipboard-title">Shared Clipboard</h2>
+                    <span id="clipboard-mode-badge" class="clipboard-badge badge-off">Off</span>
+                </div>
+                <div class="clipboard-header-actions">
+                    <button id="btn-clipboard-clear-all" class="btn-action-outline btn-clipboard-clear hidden" title="Clear all items in session">🗑️ Clear</button>
+                    <button id="btn-clipboard-close" class="btn-lb-close" title="Close (Esc)">✕</button>
+                </div>
+            </div>
+
+            <!-- Mode Notice / Status Banner -->
+            <div id="clipboard-status-banner" class="clipboard-status-banner banner-off">
+                <span id="clipboard-status-icon">🔒</span>
+                <span id="clipboard-status-text">Clipboard sharing is OFF on the phone. Enable Receive Only or Two-Way in AirSlice to use it.</span>
+            </div>
+
+            <!-- Send-to-Phone Composer -->
+            <div class="clipboard-composer" id="clipboard-composer">
+                <div class="composer-header">
+                    <label for="clipboard-input" id="lbl-composer-title" class="composer-label">Send Text to Phone</label>
+                    <span id="clipboard-byte-counter" class="byte-counter">0</span>
+                </div>
+                <div class="composer-input-wrapper">
+                    <textarea id="clipboard-input" class="clipboard-textarea" rows="3" placeholder="Type or paste text to send to phone..."></textarea>
+                </div>
+                <div class="composer-footer">
+                    <span class="composer-hint" id="clipboard-composer-hint">Press Ctrl+Enter to send</span>
+                    <button id="btn-clipboard-send" class="btn-action-primary btn-clipboard-send">
+                        📤 Send
+                    </button>
+                </div>
+                <div id="clipboard-composer-error" class="error-text hidden"></div>
+            </div>
+
+            <!-- Clipboard History Feed -->
+            <div class="clipboard-history-section">
+                <div class="history-header">
+                    <span class="history-title" id="clipboard-history-title">Session History</span>
+                    <span id="clipboard-item-count" class="item-badge">0 items</span>
+                </div>
+                <div class="clipboard-list" id="clipboard-items-list">
+                    <div class="clipboard-empty-state" id="clipboard-empty-state">
+                        No clipboard items in this session
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Privacy Note -->
+            <div class="clipboard-footer">
+                <span id="clipboard-footer-note" class="footer-info">🔒 Kept in RAM only — cleared when server stops</span>
             </div>
         </div>
     </div>

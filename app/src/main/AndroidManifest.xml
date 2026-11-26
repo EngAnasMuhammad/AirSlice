@@ -42,7 +42,27 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Android Share Sheet: text/plain receiver -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
+
+        <!-- Notification Quick-Action Transparent Trampoline -->
+        <activity
+            android:name=".presentation.ClipboardPushActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FluxLink.Transparent"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleInstance" />
+
+        <!-- Fallback Notification Broadcast Receiver for OEM background copy blocks -->
+        <receiver
+            android:name=".data.ClipboardCopyReceiver"
+            android:exported="false" />
 
         <service
             android:name=".service.ServerForegroundService"

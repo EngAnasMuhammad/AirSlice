@@ -1,8 +1,8 @@
-# ⚡ AirSlice v1.2.1 — High-Performance Android Local Web Server & HTTP 206 Media Streamer
+# ⚡ AirSlice v1.3.0 — High-Performance Android Local Web Server & HTTP 206 Media Streamer
 
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0%2B-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
-![Release](https://img.shields.io/badge/Release-v1.2.1-10B981?style=for-the-badge)
+![Release](https://img.shields.io/badge/Release-v1.3.0-10B981?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Android-API%2026%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![APK Size](https://img.shields.io/badge/APK%20Size-3.5%20MB-00C853?style=for-the-badge)
 
@@ -10,7 +10,21 @@
 
 ---
 
-## 🌟 What's New in Release v1.2.1
+## 🌟 What's New in Release v1.3.0
+
+- **📋 Real-Time Shared Clipboard Manager (Web ↔ Android):**
+  - **Thread-Safe RAM-Only Store:** In-memory rolling FIFO buffer (`ClipboardSessionStore`) holding up to 50 items (max 256 KB per item) with zero disk persistence and automatic wipe on server stop.
+  - **3 Granular Privacy Sync Modes:** `OFF` (sync disabled), `RECEIVE_ONLY` (privacy shield: phone receives from browser, phone clips never exposed to web clients), and `TWO_WAY` (seamless bidirectional real-time sync).
+  - **Live Web Frontend Workspace:** Embedded glassmorphism Clipboard card featuring long-polling real-time updates, manual push text input, 1-click clipboard copy with modern Clipboard API and `execCommand` HTTP fallback, and quick-clear controls.
+  - **Android System Integration:** System Quick-Share Sheet integration (`ACTION_SEND` text/plain), notification quick-action trampoline (`ClipboardCopyReceiver`), and privacy filters guarding against `EXTRA_IS_SENSITIVE` clips.
+  - **Hardened Security & Rate Limiting:** XSS protection with strict `textContent` DOM nodes, `Cache-Control: no-store` headers, and IP sliding-window rate limiter (30 clips/min).
+- **📶 Dynamic Hotspot Client Tracking & Wi-Fi Auto-Fallback:** Real-time client IP traffic tracking on hotspot interfaces (`HotspotClientTracker`). When Mobile Hotspot is turned on with no clients connected, the topbar network pill intelligently indicates **Wi-Fi Router mode** if connected to Wi-Fi, preserving the Hotspot hint and settings shortcut.
+- **🔌 Graceful Session & Socket Teardown on Host URL Handover (Wi-Fi ↔ Hotspot):** Active client sockets are tracked and cleanly severed (`HostUrlChangeHandler`) upon network transitions or IP changes. Automatically revokes pairing tokens, clears authenticated web cookies, and wipes pending connection approval requests to prevent stale cross-network session hijacking.
+- **📱 Activity-Scoped Hilt ViewModel Injection:** Scoped `HomeViewModel` to `MainActivity` using `by viewModels()` (Hilt-injected Activity scope) to support Android Share Sheet intents and notification actions directly in standard Activity lifecycle callbacks (`onCreate` and `onNewIntent`) with full Hilt DI support and seamless Jetpack Compose state observation.
+
+---
+
+## 🌟 Previous Highlights (Release v1.2.1)
 
 - **🛡️ Server Exit Confirmation & Lifecycle Guard:** Pressing the Android Back button on the home screen while the server is actively running now displays an interactive confirmation dialog with two explicit choices: **Keep Running in Background** or **Stop Server & Exit**.
 - **🧹 Task Removal & Foreground Service Cleanup:** Integrated `onTaskRemoved` lifecycle handling in `ServerForegroundService` to safely tear down the active server engine, release hardware wake locks, and remove foreground notifications when the user swipes the app away from recent tasks.
@@ -92,7 +106,13 @@ AirSlice follows **Clean Architecture + MVVM** with reactive Kotlin `StateFlow` 
 com.anasdev.fluxlink
 ├── data
 │   ├── NetworkInfoProvider.kt        # Hotspot vs Wi-Fi interface scoring & callbacks
+│   ├── HotspotClientTracker.kt       # Android 11+ ARP & HTTP client tracker for hotspot detection
+│   ├── HostUrlChangeHandler.kt       # Graceful teardown of sockets, sessions, & rate limiters on URL change
 │   ├── LocalServerEngine.kt          # Embedded HTTP Server Engine, HTTP 206 Range Streamer, ZIP Streamer
+│   ├── ClipboardSessionStore.kt      # In-memory thread-safe FIFO clipboard repository (50 items, RAM-only)
+│   ├── AndroidClipboardBridge.kt     # System clipboard manager bridge & notification fallback generator
+│   ├── ClipboardCopyReceiver.kt      # BroadcastReceiver trampoline for notification 1-tap copy
+│   ├── ClipboardRateLimiter.kt       # IP-based sliding window rate limiter for clipboard pushes
 │   ├── SecurityManager.kt            # Dynamic 4-Digit PIN & Session Cookie Auth
 │   ├── ConnectionApprovalManager.kt  # 1-Tap Approval State Machine
 │   ├── ConnectedSessionManager.kt    # Live Client Session & Real-Time Activity Tracking
@@ -105,16 +125,17 @@ com.anasdev.fluxlink
 │   ├── VideoStreamDataSource.kt      # O(1) RandomAccessFile / FileChannel Range Streamer
 │   └── QrCodeGenerator.kt            # Pure Kotlin QR Code bitmap generator
 ├── domain
-│   ├── model                         # NetworkState, DirectoryContent, FileMetadata, ServerStatus, AppTheme, AppLanguage
+│   ├── model                         # NetworkState, DirectoryContent, FileMetadata, ServerStatus, ClipboardItem, AppTheme, AppLanguage
 │   └── repository                    # NetworkRepository, ServerRepository, SessionRepository, SettingsRepository
 ├── service
 │   └── ServerForegroundService.kt    # Foreground Service, Notification, WakeLock & WifiLock lifecycle
 ├── presentation
-│   ├── MainActivity.kt               # Main Activity Entrypoint & Keep-Screen-On Flag Manager
+│   ├── MainActivity.kt               # Main Activity Entrypoint, Share Sheet Handler & Keep-Screen-On Flag Manager
+│   ├── ClipboardPushActivity.kt      # Transparent Trampoline Activity for native Share Sheet & Push Actions
 │   ├── navigation/AppNavigation.kt   # NavHost with custom slide + fade transitions
-│   ├── state/HomeViewModel.kt        # Unidirectional UI State & Intent handling
+│   ├── state/HomeViewModel.kt        # Unidirectional UI State, Shared Clipboard State & Intent handling
 │   ├── state/SettingsViewModel.kt    # Settings StateFlows & Preferences Mutators
-│   ├── ui/screens/HomeScreen.kt      # Morphing Power Control, Adaptive Layout, Connected Devices
+│   ├── ui/screens/HomeScreen.kt      # Morphing Power Control, Adaptive Layout, Connected Devices, Clipboard Card
 │   └── ui/screens/SettingsScreen.kt  # Material 3 Categorized Settings & About Section
 └── assets/web                        # Offline Single-Page Web Application (HTML5 / CSS3 / ES6 Vanilla JS)
 

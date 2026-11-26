@@ -16,8 +16,8 @@ android {
         applicationId = "com.anasdev.fluxlink"
         minSdk = 26
         targetSdk = 37
-        versionCode = 6
-        versionName = "1.2.1"
+        versionCode = 7
+        versionName = "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -84,6 +84,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            resValue("string", "app_name", "AirSlice")
             val keystoreFile = resolveKeystoreFile()
             signingConfig = if (keystoreFile != null) {
                 signingConfigs.getByName("release")

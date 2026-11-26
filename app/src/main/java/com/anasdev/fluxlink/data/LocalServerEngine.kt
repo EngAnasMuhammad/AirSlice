@@ -28,10 +28,13 @@ import java.net.SocketException
 import java.net.URLDecoder
 import java.nio.channels.Channels
 import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.GZIPOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.anasdev.fluxlink.domain.model.AppLanguage
+import com.anasdev.fluxlink.domain.model.ClipboardItem
+import com.anasdev.fluxlink.domain.model.ClipboardMode
 import com.anasdev.fluxlink.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.first
 
@@ -48,7 +51,10 @@ class LocalServerEngine @Inject constructor(
     private val serverDispatchers: ServerDispatchers,
     private val directBufferPool: DirectBufferPool,
     private val fileAccessTracker: FileAccessTracker,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val clipboardSessionStore: ClipboardSessionStore,
+    private val clipboardRateLimiter: ClipboardRateLimiter,
+    private val hotspotClientTracker: HotspotClientTracker
 ) {
 
     private var serverSocket: ServerSocket? = null
@@ -75,6 +81,18 @@ class LocalServerEngine @Inject constructor(
 
     private val activeConnections: MutableSet<Closeable> =
         Collections.synchronizedSet(HashSet())
+
+    val activeClientSockets: MutableSet<Socket> =
+        Collections.newSetFromMap(ConcurrentHashMap())
+
+    private val hostUrlChangeHandler = HostUrlChangeHandler(
+        securityManager = securityManager,
+        connectedSessionManager = connectedSessionManager,
+        connectionApprovalManager = connectionApprovalManager,
+        hotspotClientTracker = hotspotClientTracker,
+        clipboardRateLimiter = clipboardRateLimiter,
+        activeClientSockets = activeClientSockets
+    )
 
     @Synchronized
     fun startServer(port: Int): Boolean {
@@ -125,6 +143,7 @@ class LocalServerEngine @Inject constructor(
                 clientSocket.sendBufferSize = 1024 * 1024 // 1 MB Send Buffer
                 clientSocket.receiveBufferSize = 1024 * 1024 // 1 MB Receive Buffer
 
+                activeClientSockets.add(clientSocket)
                 activeConnections.add(clientSocket)
 
                 scope.launch {
@@ -169,6 +188,7 @@ class LocalServerEngine @Inject constructor(
 
             val rawIp = clientSocket.inetAddress?.hostAddress ?: "127.0.0.1"
             val clientIp = rawIp.trim().removePrefix("::ffff:")
+            hotspotClientTracker.recordClient(clientIp)
 
             Log.e("HTTP_TRACE", "[RAW HTTP INCOMING] $method $fullUrl from $clientIp")
 
@@ -498,13 +518,50 @@ class LocalServerEngine @Inject constructor(
                     }
                 }
 
+                // Shared Clipboard Manager Endpoints
+                "/api/clipboard/status" -> withContext(serverDispatchers.fastUiDispatcher) {
+                    val currentMode = when (clipboardSessionStore.mode.value) {
+                        ClipboardMode.OFF -> "OFF"
+                        ClipboardMode.RECEIVE_ONLY -> "RECEIVE_ONLY"
+                        ClipboardMode.TWO_WAY -> "TWO_WAY"
+                    }
+                    val latestId = clipboardSessionStore.getLatestId()
+                    val json = "{\"mode\":\"$currentMode\",\"latestId\":$latestId}"
+                    sendJsonResponse(outputStream, json, acceptEncoding = acceptEncoding)
+                }
+
+                "/api/clipboard" -> withContext(serverDispatchers.fastUiDispatcher) {
+                    handleClipboardEndpoint(
+                        method = method,
+                        inputStream = inputStream,
+                        outputStream = outputStream,
+                        contentLength = contentLength,
+                        queryParams = queryParams,
+                        acceptEncoding = acceptEncoding,
+                        clientIp = clientIp
+                    )
+                }
+
                 else -> {
-                    send404Response(outputStream, "Endpoint not found")
+                    if (rawPath.startsWith("/api/clipboard/")) {
+                        withContext(serverDispatchers.fastUiDispatcher) {
+                            handleClipboardItemDelete(
+                                method = method,
+                                rawPath = rawPath,
+                                outputStream = outputStream,
+                                acceptEncoding = acceptEncoding
+                            )
+                        }
+                    } else {
+                        send404Response(outputStream, "Endpoint not found")
+                    }
                 }
             }
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            if (e !is SocketException && e.message?.contains("Socket closed", ignoreCase = true) != true) {
+                e.printStackTrace()
+            }
         } finally {
             closeQuietly(inputStream)
             closeQuietly(outputStream)
@@ -513,6 +570,7 @@ class LocalServerEngine @Inject constructor(
             inputStream?.let { activeConnections.remove(it) }
             outputStream?.let { activeConnections.remove(it) }
             activeConnections.remove(clientSocket)
+            activeClientSockets.remove(clientSocket)
         }
     }
 
@@ -912,12 +970,77 @@ class LocalServerEngine @Inject constructor(
     }
 
     private fun extractJsonField(json: String, fieldName: String): String? {
-        val key = "\"$fieldName\""
-        if (!json.contains(key)) return null
-        val afterKey = json.substringAfter(key).trim()
-        if (!afterKey.startsWith(":")) return null
-        val valuePart = afterKey.substringAfter(":").trim().trim('{', '}', ',')
-        return valuePart.trim('"')
+        return extractJsonStringField(json, fieldName)
+    }
+
+    fun extractJsonStringField(json: String, fieldName: String): String? {
+        val keyPattern = "\"$fieldName\""
+        val keyIndex = json.indexOf(keyPattern)
+        if (keyIndex == -1) return null
+
+        var index = keyIndex + keyPattern.length
+
+        // Skip whitespace up to ':'
+        while (index < json.length && json[index].isWhitespace()) {
+            index++
+        }
+        if (index >= json.length || json[index] != ':') return null
+        index++ // skip ':'
+
+        // Skip whitespace up to opening quote '"'
+        while (index < json.length && json[index].isWhitespace()) {
+            index++
+        }
+        if (index >= json.length || json[index] != '"') return null
+        index++ // skip opening quote
+
+        // Read string content handling RFC 8259 escape sequences
+        val sb = StringBuilder()
+        var isEscaped = false
+
+        while (index < json.length) {
+            val ch = json[index]
+            if (isEscaped) {
+                when (ch) {
+                    '"' -> sb.append('"')
+                    '\\' -> sb.append('\\')
+                    '/' -> sb.append('/')
+                    'b' -> sb.append('\b')
+                    'f' -> sb.append('\u000C')
+                    'n' -> sb.append('\n')
+                    'r' -> sb.append('\r')
+                    't' -> sb.append('\t')
+                    'u' -> {
+                        if (index + 4 < json.length) {
+                            val hex = json.substring(index + 1, index + 5)
+                            try {
+                                val codePoint = hex.toInt(16)
+                                sb.append(codePoint.toChar())
+                                index += 4
+                            } catch (_: NumberFormatException) {
+                                sb.append("\\u")
+                            }
+                        } else {
+                            sb.append("\\u")
+                        }
+                    }
+                    else -> sb.append(ch)
+                }
+                isEscaped = false
+            } else {
+                if (ch == '\\') {
+                    isEscaped = true
+                } else if (ch == '"') {
+                    // Reached terminating unescaped quote
+                    return sb.toString()
+                } else {
+                    sb.append(ch)
+                }
+            }
+            index++
+        }
+
+        return null // Unterminated string
     }
 
     @Synchronized
@@ -926,10 +1049,13 @@ class LocalServerEngine @Inject constructor(
 
         _serverStatus.value = ServerStatus.STOPPING
 
-        // 1. Wipe all active session tokens and PINs
+        // 1. Wipe all active session tokens, PINs, and clipboard state
         securityManager.clearSessions()
         connectionApprovalManager.clearPendingRequest()
         connectedSessionManager.clearAllSessions()
+        clipboardSessionStore.reset()
+        clipboardRateLimiter.reset()
+        hotspotClientTracker.reset()
 
         try {
             serverSocket?.close()
@@ -946,6 +1072,7 @@ class LocalServerEngine @Inject constructor(
             }
             activeConnections.clear()
         }
+        activeClientSockets.clear()
 
         serverJob?.cancel()
         serverJob = null
@@ -953,6 +1080,193 @@ class LocalServerEngine @Inject constructor(
         _serverStartTimeMillis = 0L
         _activePort.value = null
         _serverStatus.value = ServerStatus.STOPPED
+    }
+
+    @Synchronized
+    fun onHostUrlChanged(newHostIp: String) {
+        if (_serverStatus.value != ServerStatus.RUNNING && _serverStatus.value != ServerStatus.RECONNECTING) {
+            return
+        }
+        hostUrlChangeHandler.handleHostUrlChanged(newHostIp)
+    }
+
+    fun hasConnectedHotspotClient(hotspotIp: String?, hotspotInterfaceName: String?): Boolean {
+        return hotspotClientTracker.hasConnectedHotspotClient(hotspotIp, hotspotInterfaceName)
+    }
+
+    private fun handleClipboardEndpoint(
+        method: String,
+        inputStream: InputStream,
+        outputStream: OutputStream,
+        contentLength: Long,
+        queryParams: Map<String, String>,
+        acceptEncoding: String?,
+        clientIp: String?
+    ) {
+        val currentMode = clipboardSessionStore.mode.value
+
+        when {
+            method.equals("GET", ignoreCase = true) -> {
+                if (currentMode == ClipboardMode.OFF) {
+                    val jsonError = "{\"success\":false,\"error\":\"Clipboard sharing is OFF on the host device\"}"
+                    sendJsonResponse(outputStream, jsonError, 403, "Forbidden", acceptEncoding)
+                    return
+                }
+
+                val sinceId = queryParams["since"]?.toLongOrNull()
+                val items = clipboardSessionStore.getItems(sinceId)
+                val json = formatClipboardItemsJson(items)
+                sendJsonResponse(outputStream, json, acceptEncoding = acceptEncoding)
+            }
+
+            method.equals("POST", ignoreCase = true) -> {
+                if (currentMode == ClipboardMode.OFF) {
+                    val jsonError = "{\"success\":false,\"error\":\"Clipboard sharing is OFF on the host device\"}"
+                    sendJsonResponse(outputStream, jsonError, 403, "Forbidden", acceptEncoding)
+                    return
+                }
+
+                // Length Required check
+                if (contentLength <= 0) {
+                    val jsonError = "{\"success\":false,\"error\":\"Length Required\"}"
+                    sendJsonResponse(outputStream, jsonError, 411, "Length Required", acceptEncoding)
+                    return
+                }
+
+                // Rate limiting (12 req / 10s per client)
+                val ipKey = clientIp ?: "unknown"
+                if (!clipboardRateLimiter.isAllowed(ipKey)) {
+                    val jsonError = "{\"success\":false,\"error\":\"Too Many Requests\"}"
+                    sendJsonResponse(outputStream, jsonError, 429, "Too Many Requests", acceptEncoding)
+                    return
+                }
+
+                // Hard byte cap to prevent OOM
+                if (contentLength > ClipboardSessionStore.MAX_ITEM_BYTES + 1024L) {
+                    val jsonError = "{\"success\":false,\"error\":\"Payload exceeds 64 KB limit\"}"
+                    sendJsonResponse(outputStream, jsonError, 413, "Payload Too Large", acceptEncoding)
+                    return
+                }
+
+                val bodyBytes = readExactBytes(inputStream, contentLength.toInt())
+                val bodyText = String(bodyBytes, Charsets.UTF_8)
+                val text = extractJsonField(bodyText, "text")
+
+                if (text.isNullOrBlank()) {
+                    val jsonError = "{\"success\":false,\"error\":\"Missing or blank 'text' in JSON body\"}"
+                    sendJsonResponse(outputStream, jsonError, 400, "Bad Request", acceptEncoding)
+                    return
+                }
+
+                if (text.toByteArray(Charsets.UTF_8).size > ClipboardSessionStore.MAX_ITEM_BYTES) {
+                    val jsonError = "{\"success\":false,\"error\":\"Text exceeds 64 KB limit\"}"
+                    sendJsonResponse(outputStream, jsonError, 413, "Payload Too Large", acceptEncoding)
+                    return
+                }
+
+                val createdItem = clipboardSessionStore.addItem(text, ClipboardSessionStore.SOURCE_WEB)
+                if (createdItem != null) {
+                    val json = "{\"success\":true,\"item\":${formatSingleClipboardItemJson(createdItem)}}"
+                    sendJsonResponse(outputStream, json, 201, "Created", acceptEncoding)
+                } else {
+                    val jsonError = "{\"success\":false,\"error\":\"Failed to store clipboard item\"}"
+                    sendJsonResponse(outputStream, jsonError, 400, "Bad Request", acceptEncoding)
+                }
+            }
+
+            method.equals("DELETE", ignoreCase = true) -> {
+                if (currentMode == ClipboardMode.OFF) {
+                    val jsonError = "{\"success\":false,\"error\":\"Clipboard sharing is OFF on the host device\"}"
+                    sendJsonResponse(outputStream, jsonError, 403, "Forbidden", acceptEncoding)
+                    return
+                }
+                clipboardSessionStore.clearFromWeb()
+                val jsonSuccess = "{\"success\":true,\"message\":\"Clipboard history cleared\"}"
+                sendJsonResponse(outputStream, jsonSuccess, acceptEncoding = acceptEncoding)
+            }
+
+            else -> {
+                sendJsonResponse(outputStream, "{\"error\":\"Method Not Allowed\"}", 405, "Method Not Allowed", acceptEncoding)
+            }
+        }
+    }
+
+    private fun handleClipboardItemDelete(
+        method: String,
+        rawPath: String,
+        outputStream: OutputStream,
+        acceptEncoding: String?
+    ) {
+        val currentMode = clipboardSessionStore.mode.value
+        if (currentMode == ClipboardMode.OFF) {
+            val jsonError = "{\"success\":false,\"error\":\"Clipboard sharing is OFF on the host device\"}"
+            sendJsonResponse(outputStream, jsonError, 403, "Forbidden", acceptEncoding)
+            return
+        }
+
+        if (method.equals("DELETE", ignoreCase = true)) {
+            val idStr = rawPath.substringAfter("/api/clipboard/").trim()
+            val id = idStr.toLongOrNull()
+            if (id == null) {
+                sendJsonResponse(outputStream, "{\"success\":false,\"error\":\"Invalid clipboard item ID\"}", 400, "Bad Request", acceptEncoding)
+                return
+            }
+
+            val removed = clipboardSessionStore.removeItem(id)
+            if (removed) {
+                sendJsonResponse(outputStream, "{\"success\":true,\"message\":\"Item removed\"}", acceptEncoding = acceptEncoding)
+            } else {
+                sendJsonResponse(outputStream, "{\"success\":false,\"error\":\"Item not found\"}", 404, "Not Found", acceptEncoding)
+            }
+        } else {
+            sendJsonResponse(outputStream, "{\"error\":\"Method Not Allowed\"}", 405, "Method Not Allowed", acceptEncoding)
+        }
+    }
+
+    private fun formatClipboardItemsJson(items: List<ClipboardItem>): String {
+        val sb = StringBuilder()
+        sb.append("{\"items\":[")
+        for (i in items.indices) {
+            sb.append(formatSingleClipboardItemJson(items[i]))
+            if (i < items.size - 1) {
+                sb.append(",")
+            }
+        }
+        sb.append("]}")
+        return sb.toString()
+    }
+
+    private fun formatSingleClipboardItemJson(item: ClipboardItem): String {
+        return "{\"id\":${item.id},\"text\":\"${escapeJson(item.text)}\",\"source\":\"${item.source}\",\"timestamp\":${item.timestamp}}"
+    }
+
+    fun escapeJson(str: String): String {
+        val sb = StringBuilder(str.length + 16)
+        for (i in 0 until str.length) {
+            val c = str[i]
+            when (c) {
+                '"' -> sb.append("\\\"")
+                '\\' -> sb.append("\\\\")
+                '\b' -> sb.append("\\b")
+                '\u000C' -> sb.append("\\f")
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                else -> {
+                    if (c.code < 0x20) {
+                        val hex = Integer.toHexString(c.code)
+                        sb.append("\\u")
+                        repeat(4 - hex.length) {
+                            sb.append('0')
+                        }
+                        sb.append(hex)
+                    } else {
+                        sb.append(c)
+                    }
+                }
+            }
+        }
+        return sb.toString()
     }
 
     private fun closeQuietly(closeable: Closeable?) {

@@ -1,9 +1,11 @@
 package com.anasdev.fluxlink.presentation
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
@@ -28,14 +30,19 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+
+    private val homeViewModel: HomeViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        handleIncomingShareIntent(intent)
+
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val settingsState by settingsViewModel.uiState.collectAsState()
 
-            val homeViewModel: HomeViewModel = hiltViewModel()
             val homeState by homeViewModel.uiState.collectAsState()
 
             // Dynamic Per-App Locale Application
@@ -71,6 +78,24 @@ class MainActivity : AppCompatActivity() {
                         .background(MaterialTheme.colorScheme.background)
                 ) {
                     AppNavigation()
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingShareIntent(intent)
+    }
+
+    private fun handleIncomingShareIntent(incomingIntent: Intent?) {
+        if (incomingIntent?.action == Intent.ACTION_SEND && incomingIntent.type == "text/plain") {
+            val sharedText = incomingIntent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.trim()
+            if (!sharedText.isNullOrBlank()) {
+                val byteSize = sharedText.toByteArray(Charsets.UTF_8).size
+                if (byteSize <= com.anasdev.fluxlink.data.ClipboardSessionStore.MAX_ITEM_BYTES) {
+                    homeViewModel.handleSharedTextReceived(sharedText)
                 }
             }
         }

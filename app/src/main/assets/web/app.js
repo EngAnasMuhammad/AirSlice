@@ -77,7 +77,33 @@
             minutesAgo: (m) => `${m}m ago`,
             hoursAgo: (h) => `${h}h ago`,
             daysAgo: (d) => `${d}d ago`,
-            recently: 'recently'
+            recently: 'recently',
+            clipboardNavBtn: '📋 Clipboard',
+            clipboardTitle: 'Shared Clipboard',
+            clipboardOffBadge: 'Off',
+            clipboardReceiveBadge: 'Receive Only',
+            clipboardTwoWayBadge: 'Two-Way',
+            clipboardOffNotice: 'Clipboard sharing is OFF on the phone. Enable Receive Only or Two-Way in AirSlice to use it.',
+            clipboardReceiveNotice: 'Send to Phone Only — phone clipboard history is hidden.',
+            clipboardTwoWayNotice: 'Two-Way Sync Active — sharing both Phone & Web clips.',
+            sendTextToPhone: 'Send Text to Phone',
+            typeToSharePlaceholder: 'Type or paste text to send to phone...',
+            ctrlEnterToSend: 'Press Ctrl+Enter to send',
+            sendToPhoneBtn: '📤 Send to Phone',
+            sessionHistory: 'Session History',
+            noClipboardItems: 'No clipboard items in this session',
+            clearClipboardBtn: '🗑️ Clear All',
+            copiedText: 'Copied ✓',
+            copyBtnText: 'Copy',
+            deleteBtnText: '✕',
+            sourcePhone: 'Phone',
+            sourceWeb: 'Web',
+            byteLimitExceeded: 'Text exceeds 64 KB limit',
+            byteLimitWarning: 'Approaching 64 KB limit',
+            tooManyRequests: 'Too many requests. Please wait a few seconds.',
+            clipboardEmptyError: 'Please enter some text to send',
+            clipboardSharingOffError: 'Clipboard sharing is OFF on the phone',
+            clipboardRamNote: '🔒 Kept in RAM only — cleared when server stops'
         },
         ar: {
             brandSubtitle: 'سحابي',
@@ -155,7 +181,33 @@
             minutesAgo: (m) => `منذ ${m} دقيقة`,
             hoursAgo: (h) => `منذ ${h} ساعة`,
             daysAgo: (d) => `منذ ${d} يوم`,
-            recently: 'مؤخراً'
+            recently: 'مؤخراً',
+            clipboardNavBtn: '📋 الحافظة',
+            clipboardTitle: 'الحافظة المشتركة',
+            clipboardOffBadge: 'معطل',
+            clipboardReceiveBadge: 'استقبال فقط',
+            clipboardTwoWayBadge: 'مزامنة ثنائية',
+            clipboardOffNotice: 'مشاركة الحافظة معطلة على الهاتف. قم بتفعيل "استقبال فقط" أو "مزامنة ثنائية" من التطبيق.',
+            clipboardReceiveNotice: 'إرسال للهاتف فقط — نصوص حافظة الهاتف مخفية.',
+            clipboardTwoWayNotice: 'المزامنة الثنائية نشطة — مشاركة نصوص الهاتف والمتصفح معاً.',
+            sendTextToPhone: 'إرسال نص إلى الهاتف',
+            typeToSharePlaceholder: 'اكتب أو الصق نصاً لإرساله للهاتف...',
+            ctrlEnterToSend: 'اضغط Ctrl+Enter للإرسال',
+            sendToPhoneBtn: '📤 إرسال للهاتف',
+            sessionHistory: 'سجل الحافظة',
+            noClipboardItems: 'لا توجد عناصر في حافظة هذه الجلسة',
+            clearClipboardBtn: '🗑️ مسح الكل',
+            copiedText: 'تم النسخ ✓',
+            copyBtnText: 'نسخ',
+            deleteBtnText: '✕',
+            sourcePhone: 'الهاتف',
+            sourceWeb: 'المتصفح',
+            byteLimitExceeded: 'حجم النص يتجاوز حد 64 كيلوبايت',
+            byteLimitWarning: 'تقترب من الحد الأقصى (64 كيلوبايت)',
+            tooManyRequests: 'طلبات كثيرة جداً. يرجى الانتظار بضع ثوانٍ.',
+            clipboardEmptyError: 'يرجى كتابة نص للإرسال',
+            clipboardSharingOffError: 'مشاركة الحافظة معطلة على الهاتف',
+            clipboardRamNote: '🔒 محفوظة في الذاكرة العشوائية (RAM) فقط — تُحذف عند إيقاف الخادم'
         }
     };
 
@@ -264,6 +316,28 @@
         const dragDesc = document.getElementById('drag-overlay-desc');
         if (dragTitle) dragTitle.innerText = t.dropOverlayTitle;
         if (dragDesc) dragDesc.innerText = t.dropOverlaySubtitle;
+
+        // Translate clipboard modal elements
+        const btnClipboardToggle = document.getElementById('btn-clipboard-toggle');
+        const clipboardTitle = document.getElementById('clipboard-title');
+        const lblComposerTitle = document.getElementById('lbl-composer-title');
+        const clipboardInput = document.getElementById('clipboard-input');
+        const clipboardComposerHint = document.getElementById('clipboard-composer-hint');
+        const btnClipboardSend = document.getElementById('btn-clipboard-send');
+        const btnClipboardClearAll = document.getElementById('btn-clipboard-clear-all');
+        const clipboardHistoryTitle = document.getElementById('clipboard-history-title');
+        const clipboardFooterNote = document.getElementById('clipboard-footer-note');
+
+        if (btnClipboardToggle) btnClipboardToggle.innerText = t.clipboardNavBtn;
+        if (clipboardTitle) clipboardTitle.innerText = t.clipboardTitle;
+        if (lblComposerTitle) lblComposerTitle.innerText = t.sendTextToPhone;
+        if (clipboardInput) clipboardInput.placeholder = (currentClipboardMode === 'OFF' ? t.clipboardOffNotice : t.typeToSharePlaceholder);
+        if (clipboardComposerHint) clipboardComposerHint.innerText = t.ctrlEnterToSend;
+        if (btnClipboardSend) btnClipboardSend.innerText = t.sendToPhoneBtn;
+        if (btnClipboardClearAll) btnClipboardClearAll.innerText = t.clearClipboardBtn;
+        if (clipboardHistoryTitle) clipboardHistoryTitle.innerText = t.sessionHistory;
+        if (clipboardFooterNote) clipboardFooterNote.innerText = t.clipboardRamNote;
+        updateClipboardModeUI(currentClipboardMode);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -273,6 +347,7 @@
         initLightbox();
         initDragAndDrop();
         initConfirmZipModal();
+        initClipboardModal();
         loadInitialData();
     });
 
@@ -1589,6 +1664,650 @@
         if (name.endsWith('.txt') || name.endsWith('.log') || name.endsWith('.md')) return '📝';
         if (name.endsWith('.json') || name.endsWith('.html') || name.endsWith('.css') || name.endsWith('.js') || name.endsWith('.kt') || name.endsWith('.java') || name.endsWith('.py')) return '💻';
         return '📄';
+    }
+
+    // ==========================================================================
+    // 📋 SHARED CLIPBOARD MANAGER MODULE
+    // ==========================================================================
+    let isClipboardModalOpen = false;
+    let clipboardPollTimer = null;
+    let isClipboardFetching = false;
+    let lastClipboardLatestId = 0;
+    let clipboardItemsCache = [];
+    let currentClipboardMode = 'OFF';
+
+    function initClipboardModal() {
+        const btnClipboardToggle = document.getElementById('btn-clipboard-toggle');
+        const modal = document.getElementById('clipboard-modal');
+        const btnClose = document.getElementById('btn-clipboard-close');
+        const btnSend = document.getElementById('btn-clipboard-send');
+        const btnClearAll = document.getElementById('btn-clipboard-clear-all');
+        const textarea = document.getElementById('clipboard-input');
+
+        if (btnClipboardToggle) {
+            btnClipboardToggle.addEventListener('click', () => {
+                openClipboardModal();
+            });
+        }
+
+        if (btnClose) {
+            btnClose.addEventListener('click', () => {
+                closeClipboardModal();
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeClipboardModal();
+                }
+            });
+        }
+
+        // Close on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isClipboardModalOpen) {
+                closeClipboardModal();
+            }
+        });
+
+        // Textarea byte counting & Ctrl+Enter shortcut
+        if (textarea) {
+            textarea.addEventListener('input', () => {
+                updateByteCounter();
+            });
+
+            textarea.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    sendClipboardText();
+                }
+            });
+        }
+
+        if (btnSend) {
+            btnSend.addEventListener('click', () => {
+                sendClipboardText();
+            });
+        }
+
+        if (btnClearAll) {
+            btnClearAll.addEventListener('click', async () => {
+                await clearAllClipboardItems();
+            });
+        }
+
+        // Auto-pause polling when tab is hidden, resume immediately when returning
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && isClipboardModalOpen) {
+                pollClipboardTick();
+                startClipboardPolling();
+            } else {
+                stopClipboardPolling();
+            }
+        });
+    }
+
+    async function openClipboardModal() {
+        const modal = document.getElementById('clipboard-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        isClipboardModalOpen = true;
+
+        const errorEl = document.getElementById('clipboard-composer-error');
+        if (errorEl) errorEl.classList.add('hidden');
+        updateByteCounter();
+
+        // Immediate full fetch + status sync on open
+        await fullRefreshClipboard();
+
+        const textarea = document.getElementById('clipboard-input');
+        if (textarea && currentClipboardMode !== 'OFF') {
+            textarea.focus();
+        }
+
+        startClipboardPolling();
+    }
+
+    function closeClipboardModal() {
+        const modal = document.getElementById('clipboard-modal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        isClipboardModalOpen = false;
+        stopClipboardPolling();
+    }
+
+    let consecutivePollFailures = 0;
+
+    function startClipboardPolling() {
+        stopClipboardPolling();
+        if (!isClipboardModalOpen || document.visibilityState !== 'visible') return;
+
+        const delay = consecutivePollFailures > 0 ? Math.min(10000, 2000 + consecutivePollFailures * 1500) : 2000;
+        clipboardPollTimer = setTimeout(async () => {
+            if (isClipboardModalOpen && document.visibilityState === 'visible') {
+                await pollClipboardTick();
+                startClipboardPolling();
+            }
+        }, delay);
+    }
+
+    function stopClipboardPolling() {
+        if (clipboardPollTimer) {
+            clearTimeout(clipboardPollTimer);
+            clipboardPollTimer = null;
+        }
+    }
+
+    function updateByteCounter() {
+        const textarea = document.getElementById('clipboard-input');
+        const counterEl = document.getElementById('clipboard-byte-counter');
+        const btnSend = document.getElementById('btn-clipboard-send');
+        const errorEl = document.getElementById('clipboard-composer-error');
+        if (!textarea || !counterEl) return;
+
+        const val = textarea.value;
+        const bytes = new TextEncoder().encode(val).length;
+        const maxBytes = 65536; // 64 KB
+        const warningThreshold = 58982; // 90% of 64 KB
+
+        if (bytes > maxBytes) {
+            counterEl.textContent = `${bytes.toLocaleString()} / 64 KB`;
+            counterEl.className = 'byte-counter exceeded';
+            if (btnSend) btnSend.disabled = true;
+            if (errorEl) {
+                errorEl.textContent = t.byteLimitExceeded;
+                errorEl.classList.remove('hidden');
+            }
+        } else if (bytes > warningThreshold) {
+            counterEl.textContent = `${bytes.toLocaleString()} / 64 KB`;
+            counterEl.className = 'byte-counter warning';
+            if (btnSend) btnSend.disabled = (currentClipboardMode === 'OFF' || val.trim().length === 0);
+            if (errorEl) {
+                errorEl.textContent = t.byteLimitWarning;
+                errorEl.classList.remove('hidden');
+            }
+        } else {
+            // Clean character count without 64 KB label during normal typing
+            counterEl.textContent = val.length.toLocaleString();
+            counterEl.className = 'byte-counter';
+            if (btnSend) btnSend.disabled = (currentClipboardMode === 'OFF' || val.trim().length === 0);
+            if (errorEl && (errorEl.textContent === t.byteLimitWarning || errorEl.textContent === t.byteLimitExceeded)) {
+                errorEl.classList.add('hidden');
+            }
+        }
+    }
+
+    function updateClipboardModeUI(mode) {
+        const badge = document.getElementById('clipboard-mode-badge');
+        const banner = document.getElementById('clipboard-status-banner');
+        const bannerIcon = document.getElementById('clipboard-status-icon');
+        const bannerText = document.getElementById('clipboard-status-text');
+        const composer = document.getElementById('clipboard-composer');
+        const textarea = document.getElementById('clipboard-input');
+        const btnSend = document.getElementById('btn-clipboard-send');
+        const btnClearAll = document.getElementById('btn-clipboard-clear-all');
+
+        if (!badge || !banner) return;
+
+        badge.className = 'clipboard-badge';
+        banner.className = 'clipboard-status-banner';
+
+        if (mode === 'OFF') {
+            badge.classList.add('badge-off');
+            badge.textContent = t.clipboardOffBadge;
+
+            banner.classList.add('banner-off');
+            if (bannerIcon) bannerIcon.textContent = '🔒';
+            if (bannerText) bannerText.textContent = t.clipboardOffNotice;
+
+            if (composer) composer.classList.add('disabled');
+            if (textarea) {
+                textarea.disabled = true;
+                textarea.placeholder = t.clipboardOffNotice;
+            }
+            if (btnSend) btnSend.disabled = true;
+            if (btnClearAll) btnClearAll.classList.add('hidden');
+        } else if (mode === 'RECEIVE_ONLY') {
+            badge.classList.add('badge-receive');
+            badge.textContent = t.clipboardReceiveBadge;
+
+            banner.classList.add('banner-receive');
+            if (bannerIcon) bannerIcon.textContent = '📥';
+            if (bannerText) bannerText.textContent = t.clipboardReceiveNotice;
+
+            if (composer) composer.classList.remove('disabled');
+            if (textarea) {
+                textarea.disabled = false;
+                textarea.placeholder = t.typeToSharePlaceholder;
+            }
+            updateByteCounter();
+        } else {
+            // TWO_WAY
+            badge.classList.add('badge-twoway');
+            badge.textContent = t.clipboardTwoWayBadge;
+
+            banner.classList.add('banner-twoway');
+            if (bannerIcon) bannerIcon.textContent = '⚡';
+            if (bannerText) bannerText.textContent = t.clipboardTwoWayNotice;
+
+            if (composer) composer.classList.remove('disabled');
+            if (textarea) {
+                textarea.disabled = false;
+                textarea.placeholder = t.typeToSharePlaceholder;
+            }
+            updateByteCounter();
+        }
+    }
+
+    async function fullRefreshClipboard() {
+        if (isClipboardFetching) return;
+        isClipboardFetching = true;
+        try {
+            // 1. Fetch Status
+            const statusRes = await fetch('/api/clipboard/status', { cache: 'no-store' });
+            if (statusRes.status === 401) {
+                const loginModal = document.getElementById('login-modal');
+                if (loginModal) loginModal.classList.remove('hidden');
+                return;
+            }
+            if (!statusRes.ok) {
+                clipboardItemsCache = [];
+                lastClipboardLatestId = 0;
+                renderClipboardItems();
+                return;
+            }
+
+            const status = await statusRes.json();
+            currentClipboardMode = status.mode;
+            updateClipboardModeUI(status.mode);
+
+            if (status.mode === 'OFF') {
+                clipboardItemsCache = [];
+                lastClipboardLatestId = 0;
+                renderClipboardItems();
+                return;
+            }
+
+            // 2. Full items fetch
+            const itemsRes = await fetch('/api/clipboard', { cache: 'no-store' });
+            if (itemsRes.status === 401) {
+                const loginModal = document.getElementById('login-modal');
+                if (loginModal) loginModal.classList.remove('hidden');
+                return;
+            }
+            if (itemsRes.ok) {
+                const data = await itemsRes.json();
+                clipboardItemsCache = data.items || [];
+                lastClipboardLatestId = status.latestId || (clipboardItemsCache.reduce((max, it) => Math.max(max, it.id), 0));
+                renderClipboardItems();
+            }
+        } catch (_) {
+            // Network error / server unreachable: immediately clear in-memory list and DOM
+            clipboardItemsCache = [];
+            lastClipboardLatestId = 0;
+            renderClipboardItems();
+        } finally {
+            isClipboardFetching = false;
+        }
+    }
+
+    async function pollClipboardTick() {
+        if (isClipboardFetching) return;
+        isClipboardFetching = true;
+
+        try {
+            const statusRes = await fetch('/api/clipboard/status', { cache: 'no-store' });
+            if (statusRes.status === 401) {
+                const loginModal = document.getElementById('login-modal');
+                if (loginModal) loginModal.classList.remove('hidden');
+                return;
+            }
+            if (statusRes.ok) {
+                consecutivePollFailures = 0;
+            } else {
+                consecutivePollFailures++;
+                if (clipboardItemsCache.length > 0) {
+                    clipboardItemsCache = [];
+                    lastClipboardLatestId = 0;
+                }
+                renderClipboardItems();
+                return;
+            }
+
+            const status = await statusRes.json();
+            const newMode = status.mode;
+            const latestId = status.latestId || 0;
+
+            const modeChanged = (newMode !== currentClipboardMode);
+            currentClipboardMode = newMode;
+            updateClipboardModeUI(newMode);
+
+            if (newMode === 'OFF') {
+                if (clipboardItemsCache.length > 0) {
+                    clipboardItemsCache = [];
+                    lastClipboardLatestId = 0;
+                    renderClipboardItems();
+                }
+                return;
+            }
+
+            if (latestId === 0) {
+                if (clipboardItemsCache.length > 0) {
+                    clipboardItemsCache = [];
+                    lastClipboardLatestId = 0;
+                    renderClipboardItems();
+                }
+                return;
+            }
+
+            if (modeChanged && newMode === 'RECEIVE_ONLY') {
+                clipboardItemsCache = clipboardItemsCache.filter(item => item.source === 'WEB');
+                renderClipboardItems();
+            }
+
+            if (latestId > lastClipboardLatestId) {
+                const sinceParam = lastClipboardLatestId > 0 ? `?since=${lastClipboardLatestId}` : '';
+                const itemsRes = await fetch(`/api/clipboard${sinceParam}`, { cache: 'no-store' });
+                if (itemsRes.ok) {
+                    const data = await itemsRes.json();
+                    const newItems = data.items || [];
+                    mergeClipboardItems(newItems);
+                    lastClipboardLatestId = latestId;
+                }
+            }
+        } catch (_) {
+            consecutivePollFailures++;
+            // Network error / server stopped: immediately clear in-memory list and DOM
+            if (clipboardItemsCache.length > 0) {
+                clipboardItemsCache = [];
+                lastClipboardLatestId = 0;
+            }
+            renderClipboardItems();
+        } finally {
+            isClipboardFetching = false;
+        }
+    }
+
+    function mergeClipboardItems(newItems) {
+        if (!newItems || newItems.length === 0) return;
+        const existingIds = new Set(clipboardItemsCache.map(i => i.id));
+        const additions = newItems.filter(i => !existingIds.has(i.id));
+
+        if (additions.length > 0) {
+            clipboardItemsCache = [...clipboardItemsCache, ...additions];
+            renderClipboardItems();
+        }
+    }
+
+    function renderClipboardItems() {
+        const list = document.getElementById('clipboard-items-list');
+        const countBadge = document.getElementById('clipboard-item-count');
+        const btnClearAll = document.getElementById('btn-clipboard-clear-all');
+        if (!list) return;
+
+        const visibleItems = (currentClipboardMode === 'RECEIVE_ONLY')
+            ? clipboardItemsCache.filter(it => it.source === 'WEB')
+            : (currentClipboardMode === 'OFF' ? [] : clipboardItemsCache);
+
+        if (countBadge) {
+            countBadge.textContent = t.itemsBadge(visibleItems.length);
+        }
+
+        if (btnClearAll) {
+            if (visibleItems.length > 0 && currentClipboardMode !== 'OFF') {
+                btnClearAll.classList.remove('hidden');
+            } else {
+                btnClearAll.classList.add('hidden');
+            }
+        }
+
+        list.innerHTML = '';
+
+        if (visibleItems.length === 0) {
+            const emptyEl = document.createElement('div');
+            emptyEl.className = 'clipboard-empty-state';
+            emptyEl.textContent = (consecutivePollFailures > 0) ? t.serverOfflineNotice : t.noClipboardItems;
+            list.appendChild(emptyEl);
+            return;
+        }
+
+        // Newest items first
+        const sorted = [...visibleItems].sort((a, b) => b.id - a.id);
+
+        sorted.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'clipboard-item-card';
+            card.dataset.id = item.id;
+
+            const header = document.createElement('div');
+            header.className = 'item-card-header';
+
+            const badge = document.createElement('span');
+            const isPhone = (item.source === 'PHONE');
+            badge.className = `item-source-badge ${isPhone ? 'item-badge-phone' : 'item-badge-web'}`;
+            badge.textContent = isPhone ? t.sourcePhone : t.sourceWeb;
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'item-timestamp';
+            const date = new Date(item.timestamp);
+            timeSpan.textContent = date.toLocaleTimeString([], { hour12: false });
+
+            const actions = document.createElement('div');
+            actions.className = 'item-card-actions';
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'btn-item-action btn-item-copy';
+            copyBtn.title = t.copyBtnText;
+            copyBtn.textContent = '📋 ' + t.copyBtnText;
+            copyBtn.addEventListener('click', async () => {
+                const success = await copyTextToClipboard(item.text);
+                if (success) {
+                    copyBtn.textContent = t.copiedText;
+                    copyBtn.classList.add('copied');
+                    setTimeout(() => {
+                        copyBtn.textContent = '📋 ' + t.copyBtnText;
+                        copyBtn.classList.remove('copied');
+                    }, 1500);
+                }
+            });
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn-item-action btn-item-delete';
+            deleteBtn.title = 'Delete';
+            deleteBtn.textContent = '🗑️';
+            deleteBtn.addEventListener('click', async () => {
+                await deleteClipboardItem(item.id);
+            });
+
+            actions.appendChild(copyBtn);
+            actions.appendChild(deleteBtn);
+
+            header.appendChild(badge);
+            header.appendChild(timeSpan);
+            header.appendChild(actions);
+
+            const body = document.createElement('div');
+            body.className = 'item-card-body';
+            // STRICT XSS PREVENTION: textContent only, never innerHTML
+            body.textContent = item.text;
+
+            card.appendChild(header);
+            card.appendChild(body);
+            list.appendChild(card);
+        });
+    }
+
+    async function sendClipboardText() {
+        const textarea = document.getElementById('clipboard-input');
+        const errorEl = document.getElementById('clipboard-composer-error');
+        const btnSend = document.getElementById('btn-clipboard-send');
+        if (!textarea) return;
+
+        const val = textarea.value.trim();
+        if (!val) {
+            if (errorEl) {
+                errorEl.textContent = t.clipboardEmptyError;
+                errorEl.classList.remove('hidden');
+            }
+            return;
+        }
+
+        const bytes = new TextEncoder().encode(val).length;
+        if (bytes > 65536) {
+            if (errorEl) {
+                errorEl.textContent = t.byteLimitExceeded;
+                errorEl.classList.remove('hidden');
+            }
+            return;
+        }
+
+        if (btnSend) btnSend.disabled = true;
+
+        try {
+            const res = await fetch('/api/clipboard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: val })
+            });
+
+            if (res.status === 401) {
+                const loginModal = document.getElementById('login-modal');
+                if (loginModal) loginModal.classList.remove('hidden');
+                return;
+            }
+
+            if (res.status === 403) {
+                if (errorEl) {
+                    errorEl.textContent = t.clipboardSharingOffError;
+                    errorEl.classList.remove('hidden');
+                }
+                return;
+            }
+
+            if (res.status === 413) {
+                if (errorEl) {
+                    errorEl.textContent = t.byteLimitExceeded;
+                    errorEl.classList.remove('hidden');
+                }
+                return;
+            }
+
+            if (res.status === 429) {
+                if (errorEl) {
+                    errorEl.textContent = t.tooManyRequests;
+                    errorEl.classList.remove('hidden');
+                }
+                return;
+            }
+
+            if (res.ok || res.status === 201) {
+                textarea.value = '';
+                updateByteCounter();
+                if (errorEl) errorEl.classList.add('hidden');
+                await fullRefreshClipboard();
+            } else {
+                const errJson = await res.json().catch(() => ({}));
+                if (errorEl) {
+                    errorEl.textContent = errJson.error || 'Failed to send clipboard text';
+                    errorEl.classList.remove('hidden');
+                }
+            }
+        } catch (err) {
+            if (errorEl) {
+                errorEl.textContent = t.connectionError(err.message);
+                errorEl.classList.remove('hidden');
+            }
+        } finally {
+            if (btnSend) {
+                btnSend.disabled = (currentClipboardMode === 'OFF' || textarea.value.trim().length === 0);
+            }
+        }
+    }
+
+    async function deleteClipboardItem(id) {
+        try {
+            const res = await fetch(`/api/clipboard/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (res.status === 401) {
+                const loginModal = document.getElementById('login-modal');
+                if (loginModal) loginModal.classList.remove('hidden');
+                return;
+            }
+
+            if (res.ok) {
+                clipboardItemsCache = clipboardItemsCache.filter(it => it.id !== id);
+                renderClipboardItems();
+            }
+        } catch (_) {
+            // Ignore
+        }
+    }
+
+    async function clearAllClipboardItems() {
+        try {
+            const res = await fetch('/api/clipboard', {
+                method: 'DELETE'
+            });
+
+            if (res.status === 401) {
+                const loginModal = document.getElementById('login-modal');
+                if (loginModal) loginModal.classList.remove('hidden');
+                return;
+            }
+
+            if (res.ok) {
+                clipboardItemsCache = [];
+                lastClipboardLatestId = 0;
+                renderClipboardItems();
+            }
+        } catch (_) {
+            // Ignore
+        }
+    }
+
+    async function copyTextToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (_) {
+                // Fallback
+            }
+        }
+
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.readOnly = true;
+        textArea.style.position = 'fixed';
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.width = '2em';
+        textArea.style.height = '2em';
+        textArea.style.padding = '0';
+        textArea.style.border = 'none';
+        textArea.style.outline = 'none';
+        textArea.style.boxShadow = 'none';
+        textArea.style.background = 'transparent';
+        textArea.style.opacity = '0';
+        textArea.style.fontSize = '16px';
+
+        document.body.appendChild(textArea);
+        try {
+            textArea.focus();
+            textArea.select();
+            textArea.setSelectionRange(0, text.length);
+            const successful = document.execCommand('copy');
+            return successful;
+        } catch (_) {
+            return false;
+        } finally {
+            if (document.body.contains(textArea)) {
+                document.body.removeChild(textArea);
+            }
+        }
     }
 
     function escapeHtml(str) {

@@ -107,4 +107,37 @@
     <string name="apply">تطبيق</string>
     <string name="back">رجوع</string>
     <string name="app_features">نقل لاسلكي سريع و مباشر • يعمل دون اتصال بالإنترنت</string>
+
+    <!-- Shared Clipboard Manager -->
+    <string name="clipboard_section_title">الحافظة المشتركة</string>
+    <string name="clipboard_mode_off">إيقاف</string>
+    <string name="clipboard_mode_receive">استلام</string>
+    <string name="clipboard_mode_twoway">اتجاهان</string>
+    <string name="clipboard_desc_off">مشاركة الحافظة معطلة</string>
+    <string name="clipboard_desc_receive">من الويب إلى الهاتف فقط (المتصفح لا يمكنه قراءة حافظة هاتفك)</string>
+    <string name="clipboard_desc_twoway">مزامنة كاملة بين الهاتف والمتصفح</string>
+    <string name="clipboard_send_phone_action">إرسال حافظة الهاتف</string>
+    <string name="clipboard_custom_input_hint">اكتب نصاً لمشاركته مع المتصفح…</string>
+    <string name="clipboard_send_text_button">إرسال</string>
+    <string name="clipboard_clear_action">مسح</string>
+    <string name="clipboard_privacy_note">محفوظة في الذاكرة العشوائية (RAM) فقط — تُمسح عند إيقاف الخادم</string>
+    <string name="clipboard_empty_history">لا توجد عناصر في الحافظة لهذه الجلسة</string>
+    <string name="clipboard_source_phone">الهاتف</string>
+    <string name="clipboard_source_web">المتصفح</string>
+    <string name="clipboard_copied_toast">تم النسخ إلى الحافظة</string>
+    <string name="clipboard_web_received_title">تم استلام نص جديد من الويب</string>
+    <string name="clipboard_copy_action">نسخ</string>
+    <string name="clipboard_channel_name">حافظة AirSlice</string>
+    <string name="clipboard_channel_desc">إشعارات استلام النصوص من المتصفح</string>
+    <string name="clipboard_sent_to_web">تم الإرسال إلى متصفح AirSlice</string>
+    <string name="clipboard_skipped_sensitive">تم تخطي محتوى حساس من الحافظة</string>
+    <string name="clipboard_empty">الحافظة فارغة</string>
+    <string name="clipboard_too_large">النص يتجاوز الحد الأقصى (64 كيلوبايت)</string>
+    <string name="clipboard_sharing_disabled">مشاركة الحافظة متوقفة</string>
+    <string name="clipboard_already_synced">المحتوى متزامن بالفعل</string>
+    <string name="clipboard_notification_send_action">إرسال الحافظة</string>
+    <string name="clipboard_share_sheet_received">تم استلام نص للمشاركة مع AirSlice</string>
+    <string name="clipboard_share_enable_prompt">مشاركة الحافظة معطلة حالياً. هل ترغب في تفعيل المزامنة بالإتجاهين للإرسال؟</string>
+    <string name="clipboard_share_server_stopped">يرجى تشغيل الخادم أولاً للمشاركة مع الأجهزة المتصلة</string>
+    <string name="clipboard_enable_and_send">تفعيل وإرسال</string>
 </resources>

@@ -51,7 +51,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.ui.graphics.graphicsLayer
@@ -66,11 +68,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,7 +108,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.anasdev.fluxlink.R
+import com.anasdev.fluxlink.data.ClipboardReadResult
+import com.anasdev.fluxlink.data.ClipboardSessionStore
 import com.anasdev.fluxlink.data.HotspotHelper
+import com.anasdev.fluxlink.domain.model.ClipboardItem
+import com.anasdev.fluxlink.domain.model.ClipboardMode
 import com.anasdev.fluxlink.domain.model.ClientActivityType
 import com.anasdev.fluxlink.domain.model.ConnectedClient
 import com.anasdev.fluxlink.domain.model.ConnectionMode
@@ -140,6 +152,14 @@ fun HomeScreen(
     val shareSubjectText = stringResource(id = R.string.share_subject)
     val shareTextFormat = stringResource(id = R.string.share_text_format)
     val shareChooserTitle = stringResource(id = R.string.share_chooser_title)
+    val clipboardSentText = stringResource(id = R.string.clipboard_sent_to_web)
+    val clipboardSkippedSensitiveText = stringResource(id = R.string.clipboard_skipped_sensitive)
+    val clipboardEmptyText = stringResource(id = R.string.clipboard_empty)
+    val clipboardTooLargeText = stringResource(id = R.string.clipboard_too_large)
+    val clipboardSharingDisabledText = stringResource(id = R.string.clipboard_sharing_disabled)
+    val clipboardAlreadySyncedText = stringResource(id = R.string.clipboard_already_synced)
+    val clipboardServerStoppedText = stringResource(id = R.string.clipboard_share_server_stopped)
+    val clipboardCopiedText = stringResource(id = R.string.clipboard_copied_toast)
 
     val isServerRunning = uiState.serverStatus == ServerStatus.RUNNING || uiState.serverStatus == ServerStatus.RECONNECTING
     val isNetworkAvailable = uiState.networkState.isConnected && (uiState.networkState.selectedIpAddress != null)
@@ -313,6 +333,62 @@ fun HomeScreen(
         )
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.clipboardActionResult.collect { result ->
+            val message = when (result) {
+                is ClipboardReadResult.Success -> clipboardSentText
+                is ClipboardReadResult.SkippedSensitive -> clipboardSkippedSensitiveText
+                is ClipboardReadResult.Empty -> clipboardEmptyText
+                is ClipboardReadResult.PayloadTooLarge -> clipboardTooLargeText
+                is ClipboardReadResult.ModeOff -> clipboardSharingDisabledText
+                is ClipboardReadResult.EchoIgnored -> clipboardAlreadySyncedText
+                is ClipboardReadResult.Error -> {
+                    if (result.message == "SERVER_STOPPED") {
+                        clipboardServerStoppedText
+                    } else {
+                        result.message
+                    }
+                }
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Pending Shared Text Dialog from Android Share Sheet
+    val pendingSharedText = uiState.pendingSharedText
+    if (pendingSharedText != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissPendingSharedText() },
+            title = {
+                Text(
+                    text = stringResource(id = R.string.clipboard_section_title),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = if (isServerRunning) {
+                        stringResource(id = R.string.clipboard_share_enable_prompt)
+                    } else {
+                        stringResource(id = R.string.clipboard_share_server_stopped)
+                    }
+                )
+            },
+            confirmButton = {
+                if (isServerRunning) {
+                    Button(onClick = { viewModel.confirmEnableTwoWayAndSendSharedText() }) {
+                        Text(text = stringResource(id = R.string.clipboard_enable_and_send))
+                    }
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { viewModel.dismissPendingSharedText() }) {
+                    Text(text = stringResource(id = R.string.cancel))
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -448,6 +524,19 @@ fun HomeScreen(
                                         clients = uiState.connectedClients,
                                         onRevokeSession = { viewModel.revokeClientSession(it) }
                                     )
+
+                                    SharedClipboardSection(
+                                        uiState = uiState,
+                                        onModeChange = { viewModel.setClipboardMode(it) },
+                                        onPushPhoneClipboard = { viewModel.pushPhoneClipboard() },
+                                        onSendCustomText = { viewModel.addCustomClipboardText(it) },
+                                        onCopyItem = {
+                                            viewModel.copyItemToSystemClipboard(it)
+                                            Toast.makeText(context, clipboardCopiedText, Toast.LENGTH_SHORT).show()
+                                        },
+                                        onDeleteItem = { viewModel.removeClipboardItem(it) },
+                                        onClearAll = { viewModel.clearClipboardHistory() }
+                                    )
                                 }
                             }
 
@@ -490,6 +579,19 @@ fun HomeScreen(
                             ConnectedDevicesSection(
                                 clients = uiState.connectedClients,
                                 onRevokeSession = { viewModel.revokeClientSession(it) }
+                            )
+
+                            SharedClipboardSection(
+                                uiState = uiState,
+                                onModeChange = { viewModel.setClipboardMode(it) },
+                                onPushPhoneClipboard = { viewModel.pushPhoneClipboard() },
+                                onSendCustomText = { viewModel.addCustomClipboardText(it) },
+                                onCopyItem = {
+                                    viewModel.copyItemToSystemClipboard(it)
+                                    Toast.makeText(context, clipboardCopiedText, Toast.LENGTH_SHORT).show()
+                                },
+                                onDeleteItem = { viewModel.removeClipboardItem(it) },
+                                onClearAll = { viewModel.clearClipboardHistory() }
                             )
                         }
                     }
@@ -1747,6 +1849,294 @@ private fun ServerRunningConnectionCardLandscape(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SharedClipboardSection(
+    uiState: HomeUiState,
+    onModeChange: (ClipboardMode) -> Unit,
+    onPushPhoneClipboard: () -> Unit,
+    onSendCustomText: (String) -> Unit,
+    onCopyItem: (String) -> Unit,
+    onDeleteItem: (Long) -> Unit,
+    onClearAll: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(id = R.string.clipboard_section_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (uiState.clipboardMode != ClipboardMode.OFF && uiState.clipboardItems.isNotEmpty()) {
+                TextButton(
+                    onClick = onClearAll,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.clipboard_clear_action),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+
+        // Mode Selector: 3 options (Off, Receive Only, Two-Way)
+        val modes = listOf(
+            ClipboardMode.OFF to stringResource(id = R.string.clipboard_mode_off),
+            ClipboardMode.RECEIVE_ONLY to stringResource(id = R.string.clipboard_mode_receive),
+            ClipboardMode.TWO_WAY to stringResource(id = R.string.clipboard_mode_twoway)
+        )
+
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            modes.forEachIndexed { index, (mode, label) ->
+                SegmentedButton(
+                    selected = uiState.clipboardMode == mode,
+                    onClick = { onModeChange(mode) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size)
+                ) {
+                    Text(
+                        text = label,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 12.sp,
+                        fontWeight = if (uiState.clipboardMode == mode) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+            }
+        }
+
+        val descText = when (uiState.clipboardMode) {
+            ClipboardMode.OFF -> stringResource(id = R.string.clipboard_desc_off)
+            ClipboardMode.RECEIVE_ONLY -> stringResource(id = R.string.clipboard_desc_receive)
+            ClipboardMode.TWO_WAY -> stringResource(id = R.string.clipboard_desc_twoway)
+        }
+        Text(
+            text = descText,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        if (uiState.clipboardMode != ClipboardMode.OFF) {
+            // Push Current Phone Clipboard Action & Manual Input (Available in Two-Way mode only)
+            if (uiState.clipboardMode == ClipboardMode.TWO_WAY) {
+                OutlinedButton(
+                    onClick = onPushPhoneClipboard,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_content_copy),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(id = R.string.clipboard_send_phone_action),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                // Quick text sharing input row (Rendered ONLY in TWO_WAY mode)
+                var customText by remember { mutableStateOf("") }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = customText,
+                        onValueChange = { customText = it },
+                        placeholder = {
+                            Text(
+                                text = stringResource(id = R.string.clipboard_custom_input_hint),
+                                fontSize = 12.sp
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                    )
+
+                    Button(
+                        onClick = {
+                            if (customText.isNotBlank()) {
+                                onSendCustomText(customText)
+                                customText = ""
+                            }
+                        },
+                        enabled = customText.isNotBlank(),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = stringResource(id = R.string.clipboard_send_text_button),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(id = R.string.clipboard_send_text_button),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // List of items (Consistently rendered newest-first)
+            if (uiState.clipboardItems.isEmpty()) {
+                Text(
+                    text = stringResource(id = R.string.clipboard_empty_history),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            } else {
+                uiState.clipboardItems.asReversed().forEach { item ->
+                    ClipboardItemRow(
+                        item = item,
+                        onCopy = { onCopyItem(item.text) },
+                        onDelete = { onDeleteItem(item.id) }
+                    )
+                }
+            }
+
+            // RAM-only privacy note
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_lock),
+                    contentDescription = null,
+                    modifier = Modifier.size(13.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = stringResource(id = R.string.clipboard_privacy_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClipboardItemRow(
+    item: ClipboardItem,
+    onCopy: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val isPhone = item.source == ClipboardSessionStore.SOURCE_PHONE
+    val badgeBg = if (isPhone) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer
+    val badgeTextColor = if (isPhone) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer
+    val sourceLabel = if (isPhone) stringResource(id = R.string.clipboard_source_phone) else stringResource(id = R.string.clipboard_source_web)
+    val formattedTime = remember(item.timestamp) {
+        java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(item.timestamp))
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(badgeBg)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = sourceLabel,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = badgeTextColor
+                        )
+                    }
+
+                    Text(
+                        text = formattedTime,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Text(
+                    text = item.text,
+                    fontSize = 13.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onCopy,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_content_copy),
+                        contentDescription = stringResource(id = R.string.clipboard_copy_action),
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(id = R.string.clipboard_clear_action),
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                    )
                 }
             }
         }

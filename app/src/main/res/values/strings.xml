@@ -1,14 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" translatable="false">AirSlice</string>
-    <string name="notification_permission_required">Notification permission required to start server foreground service.</string>
-    <string name="storage_permission_required">All Files Access permission required to share local files.</string>
-    <string name="connect_wifi_or_hotspot_prompt">Please connect to Wi-Fi or turn on Mobile Hotspot to start server.</string>
+    <string name="notification_permission_required">Notification permission is required to run the background server service.</string>
+    <string name="storage_permission_required">All Files Access permission is required to serve local files.</string>
+    <string name="connect_wifi_or_hotspot_prompt">Please connect to Wi-Fi or turn on Mobile Hotspot to start the server.</string>
     <string name="copied_toast_format">Copied %1$s to clipboard!</string>
     <string name="server_url_label">Server URL</string>
     <string name="pairing_pin_label">Pairing PIN</string>
     <string name="share_subject">AirSlice Mobile Storage Server</string>
     <string name="share_text_format">Connect to local mobile server: %1$s</string>
-    <string name="share_chooser_title">Share Server Link</string>
+    <string name="share_chooser_title">Share Server URL</string>
     <string name="connection_request_title">🔐 Connection Request</string>
     <string name="connection_request_message">%1$s (%2$s) wants to access your files.</string>
     <string name="approve_one_tap">Approve (1-Tap)</string>
@@ -16,25 +15,25 @@
     <string name="network_server_status_title">Network &amp; Server Status</string>
     <string name="active_interface_endpoint_label">Active Interface &amp; Endpoint</string>
     <string name="offline">Offline</string>
-    <string name="connection_topology_label">Connection Topology</string>
-    <string name="topology_hotspot_title">⚡ Direct Peer-to-Peer</string>
-    <string name="topology_hotspot_route">1-Hop direct link • Lowest latency</string>
-    <string name="topology_wifi_title">📶 Local LAN Relay</string>
-    <string name="topology_wifi_route">2-Hop link via router • Shared bandwidth</string>
-    <string name="topology_offline_title">⚠️ Disconnected</string>
-    <string name="topology_offline_route">No network interface active</string>
-    <string name="guidance_wifi_tip">💡 Tip: For direct transfers without router traffic or Wi-Fi contention, switch to your phone\'s 5GHz Mobile Hotspot.</string>
+    <string name="connection_topology_label">Connection Route</string>
+    <string name="topology_hotspot_title">⚡ Direct Device-to-Device</string>
+    <string name="topology_hotspot_route">Direct route (1 hop) • Lowest latency</string>
+    <string name="topology_wifi_title">📶 Local Network Routing</string>
+    <string name="topology_wifi_route">Router hop (2 hops) • Shared bandwidth</string>
+    <string name="topology_offline_title">⚠️ Offline</string>
+    <string name="topology_offline_route">No active network interface</string>
+    <string name="guidance_wifi_tip">💡 Tip: For faster direct transfers without router congestion, you can enable phone hotspot (5 GHz preferred).</string>
     <string name="close">Close</string>
     <string name="exit_dialog_title">Server is Running</string>
-    <string name="exit_dialog_message">The local server is currently active. Do you want to keep it running in the background, or stop the server and exit?</string>
+    <string name="exit_dialog_message">The local file server is currently active. Would you like to keep it running in the background to continue file transfers, or stop the server and exit?</string>
     <string name="run_in_background">Run in Background</string>
-    <string name="stop_and_exit">Stop &amp; Exit</string>
+    <string name="stop_and_exit">Stop and Exit</string>
     <string name="open_hotspot_settings">Open Hotspot Settings</string>
     <string name="hotspot_turbo_mode_active">⚡ Hotspot Turbo Mode Active</string>
     <string name="wifi_router_mode">📶 Wi-Fi Router Mode</string>
     <string name="server_disconnected">⚠️ Server Disconnected</string>
     <string name="connected_devices_title">Connected Devices (%1$s)</string>
-    <string name="no_active_sessions">No active browser sessions yet</string>
+    <string name="no_active_sessions">No active browser sessions</string>
     <string name="client_activity_streaming">▶ Streaming: %1$s</string>
     <string name="client_activity_downloading">⬇ Downloading: %1$s</string>
     <string name="client_activity_uploading">⬆ Uploading: %1$s</string>
@@ -52,19 +51,19 @@
     <string name="wifi_router_short">📶 Wi-Fi Router</string>
     <string name="offline_short">⚠️ Offline</string>
     <string name="ready_to_share">Ready to Share</string>
-    <string name="server_stopped_description">Run an HTTP server on your device to easily browse your files from any other device</string>
+    <string name="server_stopped_description">Launch the local HTTP server to transfer and browse files at high speed from any device</string>
     <string name="copy">Copy</string>
     <string name="share">Share</string>
-    <string name="online_ready_to_connect">Online • Ready to connect</string>
+    <string name="online_ready_to_connect">Online • Ready to Connect</string>
     <string name="pin_prefix">PIN: %1$s</string>
     <string name="storage_permission_banner_title">All Files Access Required</string>
-    <string name="storage_permission_banner_description">Grant storage permission to browse and stream local files over Wi-Fi.</string>
+    <string name="storage_permission_banner_description">Grant storage access to browse and stream local files over Wi-Fi.</string>
     <string name="grant_access">Grant Access</string>
 
     <!-- Morphing Power Control Strings -->
     <string name="no_network_connection">No Network Connection</string>
     <string name="connect_network_subtitle">Connect to Wi-Fi or turn on Mobile Hotspot to start sharing</string>
-    <string name="tap_to_launch_server">Tap the button to launch your local HTTP server</string>
+    <string name="tap_to_launch_server">Tap the button to start the local HTTP server</string>
     <string name="online_status">Online</string>
     <string name="reconnecting_status">Reconnecting…</string>
 
@@ -72,21 +71,21 @@
     <string name="settings_title">Settings</string>
     <string name="section_appearance">Appearance &amp; Language</string>
     <string name="section_security">Security &amp; Access</string>
-    <string name="section_server_files">Server &amp; Files</string>
-    <string name="section_about">About</string>
+    <string name="section_server_files">Server &amp; File Preferences</string>
+    <string name="section_about">About &amp; Developer</string>
 
     <string name="theme_setting_title">App Theme</string>
-    <string name="theme_setting_desc">Choose light, dark, or system default theme</string>
+    <string name="theme_setting_desc">Select Light, Dark, or System Default theme</string>
     <string name="language_setting_title">App Language</string>
-    <string name="language_setting_desc">Choose application display language</string>
+    <string name="language_setting_desc">Select application display language</string>
 
-    <string name="require_pin_title">Require PIN Authentication</string>
-    <string name="require_pin_desc">Require 4-digit PIN for browser access</string>
+    <string name="require_pin_title">Require PIN on Connection</string>
+    <string name="require_pin_desc">Require 4-digit PIN for web browser access</string>
     <string name="show_hidden_title">Show Hidden Files</string>
     <string name="show_hidden_desc">Display files and folders starting with \".\"</string>
     <string name="server_port_title">Server Port</string>
-    <string name="server_port_desc_format">Port: %1$s (Takes effect on next server start)</string>
-    <string name="keep_screen_on_title">Keep Screen On While Active</string>
+    <string name="server_port_desc_format">Port: %1$s (applies on next server start)</string>
+    <string name="keep_screen_on_title">Keep Screen On</string>
     <string name="keep_screen_on_desc">Prevent screen sleep while server is running</string>
 
     <string name="developer_title">Designed &amp; Developed by</string>
@@ -110,4 +109,37 @@
     <string name="apply">Apply</string>
     <string name="back">Back</string>
     <string name="app_features">Fast Direct Wireless Transfer • Offline First</string>
+
+    <!-- Shared Clipboard Manager -->
+    <string name="clipboard_section_title">Shared Clipboard</string>
+    <string name="clipboard_mode_off">Off</string>
+    <string name="clipboard_mode_receive">Receive</string>
+    <string name="clipboard_mode_twoway">Two-Way</string>
+    <string name="clipboard_desc_off">Clipboard sharing is disabled</string>
+    <string name="clipboard_desc_receive">Web → Phone only (Browser cannot read phone)</string>
+    <string name="clipboard_desc_twoway">Phone ↔ Web full sync</string>
+    <string name="clipboard_send_phone_action">Send Phone Clipboard</string>
+    <string name="clipboard_custom_input_hint">Type text to share with Web…</string>
+    <string name="clipboard_send_text_button">Send</string>
+    <string name="clipboard_clear_action">Clear</string>
+    <string name="clipboard_privacy_note">Kept in RAM only — cleared when server stops</string>
+    <string name="clipboard_empty_history">No clipboard items in this session</string>
+    <string name="clipboard_source_phone">Phone</string>
+    <string name="clipboard_source_web">Web</string>
+    <string name="clipboard_copied_toast">Copied to clipboard</string>
+    <string name="clipboard_web_received_title">New Web Clipboard Content</string>
+    <string name="clipboard_copy_action">Copy</string>
+    <string name="clipboard_channel_name">AirSlice Clipboard</string>
+    <string name="clipboard_channel_desc">Notifications for incoming web clipboard items</string>
+    <string name="clipboard_sent_to_web">Sent to AirSlice Web</string>
+    <string name="clipboard_skipped_sensitive">Skipped sensitive clipboard content</string>
+    <string name="clipboard_empty">Clipboard is empty</string>
+    <string name="clipboard_too_large">Clipboard text exceeds 64 KB limit</string>
+    <string name="clipboard_sharing_disabled">Clipboard sharing is OFF</string>
+    <string name="clipboard_already_synced">Content already synced</string>
+    <string name="clipboard_notification_send_action">Send Clipboard</string>
+    <string name="clipboard_share_sheet_received">Text shared with AirSlice</string>
+    <string name="clipboard_share_enable_prompt">Clipboard sharing is currently OFF. Turn on Two-Way to send?</string>
+    <string name="clipboard_share_server_stopped">Start the server first to share with connected devices</string>
+    <string name="clipboard_enable_and_send">Enable &amp; Send</string>
 </resources>

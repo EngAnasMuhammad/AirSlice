@@ -1791,4 +1791,424 @@ body {
     text-align: right;
 }
 
+/* ==========================================================================
+   📋 SHARED CLIPBOARD MANAGER STYLES
+   ========================================================================== */
+.btn-nav-clipboard {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(33, 150, 243, 0.08);
+    border-color: rgba(33, 150, 243, 0.25);
+    color: var(--text-main);
+    transition: all 0.2s ease;
+}
+
+.btn-nav-clipboard:hover {
+    background: rgba(33, 150, 243, 0.16);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.clipboard-modal-card {
+    max-width: 620px;
+    width: 92%;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    padding: 22px;
+    gap: 16px;
+    background: rgba(19, 27, 46, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+}
+
+.clipboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.clipboard-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.clipboard-header-icon {
+    font-size: 20px;
+}
+
+.clipboard-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.3px;
+}
+
+.clipboard-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-off {
+    background: rgba(148, 163, 184, 0.15);
+    color: var(--text-muted);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.badge-receive {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.badge-twoway {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.clipboard-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-clipboard-clear {
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    color: var(--accent-error);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.btn-clipboard-clear:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: var(--accent-error);
+}
+
+/* Status Banner */
+.clipboard-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    transition: all 0.2s ease;
+}
+
+.banner-off {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+}
+
+.banner-receive {
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    color: #93c5fd;
+}
+
+.banner-twoway {
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    color: #6ee7b7;
+}
+
+/* Composer Section */
+.clipboard-composer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(9, 13, 22, 0.6);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+
+.clipboard-composer.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.composer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.composer-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.byte-counter {
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.byte-counter.warning {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.byte-counter.exceeded {
+    color: var(--accent-error);
+    font-weight: 700;
+}
+
+.clipboard-textarea {
+    width: 100%;
+    min-height: 70px;
+    max-height: 140px;
+    resize: vertical;
+    background: rgba(19, 27, 46, 0.8);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text-main);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.clipboard-textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.composer-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.composer-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.btn-clipboard-send {
+    font-size: 12px;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+/* History Feed */
+.clipboard-history-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-height: 120px;
+    overflow: hidden;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2px;
+}
+
+.history-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.clipboard-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 4px;
+    max-height: 260px;
+}
+
+/* Custom Scrollbar */
+.clipboard-list::-webkit-scrollbar {
+    width: 5px;
+}
+.clipboard-list::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.2);
+    border-radius: 4px;
+}
+
+.clipboard-empty-state {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+    background: rgba(9, 13, 22, 0.3);
+}
+
+/* Individual Clip Card */
+.clipboard-item-card {
+    background: rgba(9, 13, 22, 0.7);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.clipboard-item-card:hover {
+    border-color: rgba(33, 150, 243, 0.4);
+    background: rgba(9, 13, 22, 0.9);
+}
+
+.item-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.item-source-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.item-badge-phone {
+    background: rgba(33, 150, 243, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.item-badge-web {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.item-timestamp {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
+.item-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.btn-item-action {
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: var(--text-main);
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-item-action:hover {
+    background: rgba(148, 163, 184, 0.2);
+}
+
+.btn-item-copy.copied {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--accent-success);
+    color: #6ee7b7;
+    font-weight: 700;
+}
+
+.btn-item-delete {
+    color: var(--accent-error);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.btn-item-delete:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: var(--accent-error);
+}
+
+.item-card-body {
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--text-main);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 100px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+.clipboard-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 4px;
+    border-top: 1px solid var(--border-color);
+}
+
+.clipboard-footer .footer-info {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+    .clipboard-modal-card {
+        padding: 16px;
+        width: 95%;
+        max-height: 92vh;
+        gap: 12px;
+    }
+
+    .btn-nav-clipboard {
+        font-size: 11px;
+        padding: 6px 9px;
+    }
+}
+
+[dir="rtl"] .item-card-actions {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+[dir="rtl"] .item-card-body {
+    text-align: right;
+    direction: rtl;
+}
+
 
